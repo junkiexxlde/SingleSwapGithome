@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n-title="monthly-inventory-page-title">MDM Tool - Monatsinventur</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="landing-page monthly-inventory-page has-topbar">
+    <div class="topbar">
+        <div class="topbar-left">
+            <button id="menu-toggle" class="toolbar-button" type="button" aria-label="Navigation Menu">☰</button>
+        </div>
+        <div class="topbar-title" data-i18n="app-shell-title">Mobile Device Warranty Management Tool</div>
+        <div class="topbar-right">
+            <div class="language-toggle compact-toggle">
+                <button id="lang-de" class="lang-button active" type="button">DE</button>
+                <button id="lang-en" class="lang-button" type="button">EN</button>
+            </div>
+            <button id="theme-toggle" class="toolbar-button" type="button" aria-label="Theme Toggle">🌙</button>
+            <button id="settings-toggle" class="toolbar-button" type="button" aria-label="Settings Menu">⚙</button>
+        </div>
+    </div>
+    <aside id="nav-drawer" class="nav-drawer" aria-hidden="true">
+        <nav class="drawer-nav">
+            <a href="index.html" data-i18n="nav-home">Startseite</a>
+            <a href="singleswap.html" data-i18n="nav-new-case">Neuen Fall anlegen</a>
+            <a href="overview.html" data-i18n="nav-overview">Übersicht</a>
+            <a href="assetmanagement.html" data-i18n="nav-assets">Assets verwalten</a>
+            <a href="monthlyinventory.html" data-i18n="nav-monthly-inventory">Monatsinventur</a>
+        </nav>
+    </aside>
+    <div id="menu-backdrop" class="menu-backdrop hidden"></div>
+    <div id="settings-menu" class="settings-menu hidden">
+        <div class="asset-settings-panel monthly-inventory-settings-panel">
+            <h3 id="monthlyInventorySettingsTitle" data-i18n="monthly-inventory-settings-title">Manuelle Werte</h3>
+            <label for="monthlyInventoryOutgoingInput" data-i18n="monthly-inventory-outgoing-label">Abgänge</label>
+            <input id="monthlyInventoryOutgoingInput" class="asset-settings-input monthly-inventory-stat-input" type="number" min="0" step="1" value="0">
+
+            <label for="monthlyInventoryIncomingInput" data-i18n="monthly-inventory-incoming-label">Zugänge</label>
+            <input id="monthlyInventoryIncomingInput" class="asset-settings-input monthly-inventory-stat-input" type="number" min="0" step="1" value="0">
+
+            <div class="monthly-inventory-actions">
+                <button id="monthlyInventorySaveButton" type="button" class="button secondary" data-i18n="monthly-inventory-save-button">Werte speichern</button>
+                <button id="monthlyInventoryResetButton" type="button" class="button secondary" data-i18n="monthly-inventory-reset-button">Werte zurücksetzen</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="subpage-layout">
+        <h1 class="subpage-heading" data-i18n="monthly-inventory-heading">Monatsinventur</h1>
+        <main class="card nav-shell monthly-inventory-shell">
+            <section class="monthly-inventory-intro" aria-labelledby="monthlyInventoryMonthLabel">
+                <div class="monthly-inventory-intro-copy">
+                    <p class="monthly-inventory-description" data-i18n="monthly-inventory-description">Monatliche Bestandsübersicht pro Gerätetyp und Typ auf Basis der Lagerliste.</p>
+                    <div id="monthlyInventoryMonthLabel" class="month-badge"></div>
+                </div>
+                <div class="monthly-inventory-controls">
+                    <div class="monthly-inventory-selector">
+                        <label for="monthlyInventoryMonthSelect" data-i18n="monthly-inventory-month-label">Monat auswählen</label>
+                        <input id="monthlyInventoryMonthSelect" type="month">
+                    </div>
+                    <div class="monthly-inventory-selector">
+                        <label for="monthlyInventoryTypeSelect" data-i18n="monthly-inventory-type-label">Gerätetyp auswählen</label>
+                        <select id="monthlyInventoryTypeSelect">
+                            <option value="" data-i18n="monthly-inventory-type-placeholder">Bitte auswählen</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <section class="monthly-inventory-content" aria-live="polite">
+                <div id="monthlyInventoryModelTabs" class="monthly-inventory-tabs hidden" role="tablist" aria-label="Model Tabs"></div>
+
+                <div id="monthlyInventoryMetrics" class="monthly-inventory-metrics hidden">
+                    <div class="monthly-inventory-metrics-head">
+                        <h2 id="monthlyInventoryModelHeading"></h2>
+                        <p id="monthlyInventoryModelHint" class="monthly-inventory-model-hint"></p>
+                    </div>
+                    <div class="monthly-inventory-stat-grid">
+                        <article class="monthly-inventory-stat-card">
+                            <span class="monthly-inventory-stat-label" data-i18n="monthly-inventory-total-label">Gesamtzahl</span>
+                            <strong id="monthlyInventoryTotal" class="monthly-inventory-stat-value">0</strong>
+                        </article>
+                        <article class="monthly-inventory-stat-card">
+                            <span class="monthly-inventory-stat-label" data-i18n="monthly-inventory-outgoing-label">Abgänge</span>
+                            <strong id="monthlyInventoryOutgoing" class="monthly-inventory-stat-value">0</strong>
+                        </article>
+                        <article class="monthly-inventory-stat-card">
+                            <span class="monthly-inventory-stat-label" data-i18n="monthly-inventory-incoming-label">Zugänge</span>
+                            <strong id="monthlyInventoryIncoming" class="monthly-inventory-stat-value">0</strong>
+                        </article>
+                        <article class="monthly-inventory-stat-card monthly-inventory-stat-card-emphasis">
+                            <span class="monthly-inventory-stat-label" data-i18n="monthly-inventory-ending-label">Monatsendbestand</span>
+                            <strong id="monthlyInventoryEnding" class="monthly-inventory-stat-value">0</strong>
+                        </article>
+                    </div>
+                </div>
+            </section>
+            <a class="back-link back-inventory" href="index.html" data-i18n="back-home">Zurück zur Startseite</a>
+        </main>
+    </div>
+
+    <script src="app-version.js"></script>
+    <script src="navigation.js"></script>
+    <script src="monthlyinventory.js"></script>
+</body>
+</html>

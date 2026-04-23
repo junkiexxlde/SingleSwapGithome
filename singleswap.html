@@ -11,7 +11,7 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23000000' width='192' height='192'/><text x='50%' y='50%' font-size='80' fill='%23ffffff' text-anchor='middle' dominant-baseline='middle' font-weight='bold'>MDW</text></svg>">
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23000000' width='192' height='192'/><text x='50%' y='50%' font-size='80' fill='%23ffffff' text-anchor='middle' dominant-baseline='middle' font-weight='bold'>MDW</text></svg>">
 </head>
-<body class="has-topbar">
+<body class="landing-page singleswap-page has-topbar">
     <div class="topbar">
         <div class="topbar-left">
             <button id="menu-toggle" class="toolbar-button" type="button" aria-label="Navigation Menu">☰</button>
@@ -32,14 +32,23 @@
             <a href="singleswap.html" data-i18n="nav-new-case">Neuen Fall anlegen</a>
             <a href="overview.html" data-i18n="nav-overview">Übersicht</a>
             <a href="assetmanagement.html" data-i18n="nav-assets">Assets verwalten</a>
+            <a href="monthlyinventory.html" data-i18n="nav-monthly-inventory">Monatsinventur</a>
         </nav>
     </aside>
     <div id="menu-backdrop" class="menu-backdrop hidden"></div>
     <div id="settings-menu" class="settings-menu hidden">
-        <span data-i18n="settings-placeholder">Einstellungsmenü folgt.</span>
+        <div class="asset-settings-panel singleswap-settings-panel">
+            <h3 data-i18n="singleswap-settings-title">Weitere Aktionen</h3>
+            <button type="button" id="loadLastDataset" class="button secondary" data-i18n="load-last-dataset-button">Letzten Datensatz laden</button>
+            <button type="button" id="viewData" class="button secondary" data-i18n="view-button">Gespeicherte Datensätze anzeigen</button>
+            <button type="button" id="exportPdf" class="button secondary" data-i18n="export-pdf-button">Als PDF exportieren</button>
+            <button type="button" id="exportDeliveryNotePdf" class="button secondary" data-i18n="export-delivery-note-pdf-button">Lieferschein als PDF exportieren</button>
+        </div>
     </div>
 
-    <div class="container">
+    <div class="subpage-layout singleswap-layout">
+        <h1 class="subpage-heading" data-i18n="nav-new-case">Neuen Fall anlegen</h1>
+        <main class="nav-shell singleswap-shell">
 
         <div class="forms-row">
             <!-- ALTES GERÄT -->
@@ -62,7 +71,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="old-version" data-i18n="version-label">Version:<span class="required" aria-hidden="true">*</span></label>
+                        <label for="old-version" data-i18n="version-label">Typ:<span class="required" aria-hidden="true">*</span></label>
                         <select id="old-version" name="version" required>
                             <option value="" data-i18n="select-default">-- Bitte auswählen --</option>
                             <option value="iPhone SE" data-i18n="version-iphone-se" data-type="iPhone">iPhone SE</option>
@@ -71,6 +80,7 @@
                             <option value="iPhone 16e" data-i18n="version-iphone-16e" data-type="iPhone">iPhone 15 pro</option>
                             <option value="iPhone 16e" data-i18n="version-iphone-16e" data-type="iPhone">iPhone 16e</option>
                             <option value="iPhone 17" data-i18n="version-iphone-17" data-type="iPhone">iPhone 17</option>
+                            <option value="iPhone SE (S3) 2022" data-i18n="version-iPhone SE (S3) 2022" data-type="iPhone">iPhone SE (S3) 2022</option>
                             <option value="iPad Pro" data-i18n="version-ipad-pro" data-type="iPad">iPad Pro</option>
                             <option value="iPad Air" data-i18n="version-ipad-air" data-type="iPad">iPad Air</option>
                             <option value="iPad mini" data-i18n="version-ipad-mini" data-type="iPad">iPad mini</option>
@@ -105,7 +115,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="old-swapreason" data-i18n="swap-reason-label">Grund f&Uuml;r Austausch/Defekt:<span class="required" aria-hidden="true">*</span></label>
+                        <label for="old-swapreason" data-i18n="swap-reason-label">Grund f&uuml;r Austausch/Defekt:<span class="required" aria-hidden="true">*</span></label>
                         <textarea id="old-swapreason" name="swapreason" rows="3" required></textarea>
                     </div>
 
@@ -140,7 +150,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="new-version" data-i18n="version-label">Version:<span class="required" aria-hidden="true">*</span></label>
+                        <label for="new-version" data-i18n="version-label">Typ:<span class="required" aria-hidden="true">*</span></label>
                         <select id="new-version" name="version" required>
                             <option value="" data-i18n="select-default">-- Bitte auswählen --</option>
                             <option value="iPhone SE" data-i18n="version-iphone-se" data-type="iPhone">iPhone SE</option>
@@ -149,6 +159,7 @@
                             <option value="iPhone 16e" data-i18n="version-iphone-16e" data-type="iPhone">iPhone 15 pro</option>
                             <option value="iPhone 16e" data-i18n="version-iphone-16e" data-type="iPhone">iPhone 16e</option>
                             <option value="iPhone 17" data-i18n="version-iphone-17" data-type="iPhone">iPhone 17</option>
+                            <option value="iPhone SE (S3) 2022" data-i18n="version-iPhone SE (S3) 2022" data-type="iPhone">iPhone SE (S3) 2022</option>
                             <option value="iPad Pro" data-i18n="version-ipad-pro" data-type="iPad">iPad Pro</option>
                             <option value="iPad Air" data-i18n="version-ipad-air" data-type="iPad">iPad Air</option>
                             <option value="iPad mini" data-i18n="version-ipad-mini" data-type="iPad">iPad mini</option>
@@ -160,7 +171,7 @@
                     <div class="form-group">
                         <label for="new-assetid" data-i18n="assetid-label">Asset-ID:<span class="required" aria-hidden="true">*</span></label>
                         <select id="new-assetid" name="assetid" required>
-                            <option value="" data-i18n="assetid-select-prereq">-- Erst Gerätetyp und Version wählen --</option>
+                            <option value="" data-i18n="assetid-select-prereq">-- Erst Gerätetyp und Typ wählen --</option>
                         </select>
                     </div>
 
@@ -193,20 +204,16 @@
             </div>
         </div>
 
-        <!-- Gemeinsamer Speicher-Button -->
-        <div class="form-actions global-actions">
+        <!-- Gemeinsame Hauptaktionen -->
+        <div class="form-actions global-actions singleswap-primary-actions">
             <button type="button" id="saveDataset" class="button secondary" data-i18n="save-dataset-button">Datensatz speichern</button>
-            <button type="button" id="loadLastDataset" class="button secondary" data-i18n="load-last-dataset-button">Letzten Datensatz laden</button>
             <button type="button" id="clearFormFields" class="button secondary" data-i18n="clear-form-button">Formular leeren</button>
-            <button type="button" id="viewData" class="button secondary" data-i18n="view-button">Gespeicherte Datensätze anzeigen</button>
             <button type="button" id="printData" class="button secondary" data-i18n="print-button">Drucken</button>
-            <button type="button" id="exportPdf" class="button secondary" data-i18n="export-pdf-button">Als PDF exportieren</button>
+            <button type="button" id="printDeliveryNote" class="button secondary" data-i18n="print-delivery-note-button">Lieferschein drucken</button>
         </div>
 
-        <!-- Lieferschein Buttons -->
-        <div class="form-actions global-actions">
-            <button type="button" id="printDeliveryNote" class="button secondary" data-i18n="print-delivery-note-button">Lieferschein drucken</button>
-            <button type="button" id="exportDeliveryNotePdf" class="button secondary" data-i18n="export-delivery-note-pdf-button">Lieferschein als PDF exportieren</button>
+        <div class="form-actions global-actions singleswap-link-actions">
+            <a href="overview.html" class="button secondary singleswap-overview-link" data-i18n="to-overview-button">zur Übersicht</a>
         </div>
 
         <div id="dataModal" class="modal">
@@ -225,8 +232,7 @@
                                     <line x1="14" y1="14" x2="20" y2="20"></line>
                                 </svg>
                             </span>
-                            <input type="text" id="datasetSearch" class="modal-search-input" data-i18n-placeholder="search-placeholder" placeholder="Search by ticket number..." 
-                            style="padding-left: 3%;">
+                            <input type="text" id="datasetSearch" class="modal-search-input" data-i18n-placeholder="search-placeholder" placeholder="Search by ticket number...">
                         </div>
                     </div>
                 </div>
@@ -236,7 +242,7 @@
                     <label for="datasetSelector" class="modal-filter-label modal-filter-label-nowrap" data-i18n="dataset-selector-label">Select Dataset:</label>
                     <div class="modal-selector-row">
                         <select id="datasetSelector">
-                            <option value="">Ticketnumber</option>
+                            <option value="">Ticket Number</option>
                         </select>
                         <div id="exportButtonContainer"></div>
                         <div id="importButtonContainer"></div>
@@ -254,10 +260,12 @@
                 <div id="savedData"></div>
             </div>
         </div>
+        </main>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="app-version.js"></script>
     <script src="scripts.js"></script>
     <script>
         // Register Service Worker for PWA functionality

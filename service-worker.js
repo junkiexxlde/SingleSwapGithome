@@ -1,9 +1,18 @@
-const CACHE_NAME = 'mdwmt-v1';
+const CACHE_NAME = 'mdwmt-v4';
 const urlsToCache = [
   './',
   './index.html',
+  './singleswap.html',
+  './overview.html',
+  './assetmanagement.html',
+  './monthlyinventory.html',
   './styles.css',
+  './app-version.js',
+  './navigation.js',
   './scripts.js',
+  './overview.js',
+  './assetmanagement.js',
+  './monthlyinventory.js',
   './manifest.json'
 ];
 

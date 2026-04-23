@@ -98,7 +98,7 @@ MDMTool/
 12. Lieferschein Print + PDF (`printDeliveryNote`, `exportDeliveryNotePdf`)
 13. CSV-Export (einzeln + gesamt)
 14. CSV-Import
-15. Versionsfilterfunktion (Dropdowns nach Gerätetyp filtern)
+15. Typfilterfunktion (Dropdowns nach Gerätetyp filtern)
 16. `DOMContentLoaded`-Bootstrap
 
 ---
@@ -107,7 +107,7 @@ MDMTool/
 
 ### 4.1 Grundfunktion: Formular + IndexedDB
 
-**Ausgangspunkt:** Zweispaltiges Formular für Alt- und Neu-Gerät mit Pflichtfeldern (Ticket, Gerätetyp, Version, Asset-ID, Nutzer-ID) und einem „Datensatz speichern"-Button.
+**Ausgangspunkt:** Zweispaltiges Formular für Alt- und Neu-Gerät mit Pflichtfeldern (Ticket, Gerätetyp, Typ, Asset-ID, Nutzer-ID) und einem „Datensatz speichern"-Button.
 
 - Ticketnummer dient als logischer Schlüssel; beim Speichern wird auf Duplikate geprüft
 - Kostenstelle wurde nachträglich vom Alt- in das Neu-Gerät-Formular verschoben, da sie das neue Gerät betrifft
@@ -121,9 +121,9 @@ MDMTool/
 - Jede Karte hat Buttons: Laden (ins Formular), Löschen (mit optionalem CSV-Export vorher), Einzel-CSV-Export
 - Text-Suche filtert nach Ticketnummer in Echtzeit
 
-### 4.3 Versionsdropdown-Filterung
+### 4.3 Typdropdown-Filterung
 
-- Die Versions-`<select>`-Elemente zeigen dynamisch nur Optionen passend zum gewählten Gerätetyp an
+- Die Typ-`<select>`-Elemente zeigen dynamisch nur Optionen passend zum gewählten Gerätetyp an
 - Implementiert über `data-type`-Attribute an den `<option>`-Elementen und `change`-Event-Listener auf den Typ-Dropdowns
 
 ### 4.4 Drucken und PDF-Export (Tauschprotokoll)
@@ -239,7 +239,7 @@ MDMTool/
    - Datei-Import unterstützt CSV, XLSX, XLS, ODS
    - Aus Datei werden nur Asset-Basisfelder gelesen:
      - Gerätetyp
-     - Version
+       - Typ
      - Asset-ID
      - Seriennummer
 
@@ -256,6 +256,32 @@ MDMTool/
 5. **Datenpflege:**
    - Permanenter Lösch-Button „Alle Datensätze löschen" im Einstellungsmenü
    - Löscht Lagerlisteneinträge, behält Standardwerte bei
+
+### 4.13 Version 006 – Asset Administration + Option-Menü-Überarbeitung
+
+**Grund für Versionssprung auf 006:** funktionale Erweiterung im Assetmanagement plus UI-Überarbeitung über mehrere Seiten.
+
+1. **Asset Administration ergänzt:**
+   - Neuer Bereich im Einstellungs-/Option-Menü von `assetmanagement.html`
+   - Gerätetypen können als akzeptierte Typen hinzugefügt, bearbeitet und entfernt werden
+
+2. **Gemeinsame Typquelle eingeführt:**
+   - Akzeptierte Typen werden persistent gespeichert (LocalStorage)
+   - SingleSwap-Dropdowns nutzen diese Typen zusätzlich zu den Standardtypen
+
+3. **Importvalidierung erweitert:**
+   - Asset-Import in `assetmanagement.js` validiert gegen die gepflegten akzeptierten Gerätetypen
+   - Damit sind neue, freigegebene Typen im Import zulässig
+
+4. **Option-Menüs vereinheitlicht:**
+   - Einheitliche Farb- und Flächenlogik für das Options-Menü auf allen Seiten
+   - Option-Sektionen sind farblich bewusst vom Hauptinhalt getrennt
+
+5. **Interaktion im Options-Menü verbessert:**
+   - Vertikale Menüstruktur
+   - Auf-/Zuklappen pro Menüpunkt (Fold/Unfold)
+   - Inhalte sind direkt am jeweiligen Menüpunkt verankert
+   - Menübreite reduziert für kompaktere Darstellung
 
 ---
 
@@ -296,6 +322,19 @@ Die Anwendung benötigt keinen Build-Schritt. Deployment:
 1. Alle Dateien auf einen Webserver kopieren (HTTPS empfohlen für Service-Worker-Registrierung)
 2. Oder lokal über einen einfachen HTTP-Server öffnen (z.B. `python3 -m http.server`)
 3. Für PWA-Installation: Browser-eigenes „Zum Startbildschirm hinzufügen" nutzen
+
+---
+
+## 8. Änderungsrichtlinie (Major Changes)
+
+Für jede **größere Änderung** (neue Kernfunktion, relevante UI/UX-Änderung, Datenmodell-/Validierungsänderung, seitenübergreifende Logikänderung) gilt künftig:
+
+1. `app-version.js` wird erhöht (z. B. `006` -> `007`).
+2. In dieser Datei (`DEVELOPMENT.md`) wird ein kurzer, klarer Änderungsblock mit den Gründen ergänzt.
+3. Der Eintrag beschreibt mindestens:
+   - was funktional neu ist,
+   - welche Seiten/Module betroffen sind,
+   - warum der Versionssprung notwendig war.
 
 ---
 

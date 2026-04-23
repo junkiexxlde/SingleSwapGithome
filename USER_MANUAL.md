@@ -57,7 +57,7 @@ Unterstützte Dateiformate:
 Aus der Datei werden nur Asset-Daten gelesen:
 
 - Gerätetyp
-- Version
+- Typ
 - Asset-ID
 - Seriennummer
 
@@ -111,7 +111,7 @@ Füllen Sie alle Pflichtfelder aus (mit `*` markiert):
 |---|---|
 | Ticketnummer `*` | Eindeutige Ticket-ID aus dem Helpdesk-System |
 | Gerätetyp `*` | iPhone / iPad / MacBook |
-| Version `*` | Modell des Geräts (Auswahl passt sich dem Gerätetyp an) |
+| Typ `*` | Modell des Geräts (Auswahl passt sich dem Gerätetyp an) |
 | Asset-ID `*` | Interne Inventarnummer |
 | Seriennummer | Optional; Seriennummer des Geräts |
 | Nutzer | Name des Anwenders |
@@ -126,7 +126,7 @@ Standardfall: Ein Ersatzgerät wird ausgegeben. Füllen Sie die Pflichtfelder au
 | Feld | Beschreibung |
 |---|---|
 | Gerätetyp `*` | Typ des Austauschgeräts |
-| Version `*` | Modell des Austauschgeräts |
+| Typ `*` | Modell des Austauschgeräts |
 | Asset-ID `*` | Inventarnummer des Austauschgeräts |
 | Seriennummer | Optional |
 | Nutzer | Name des Anwenders (kann aus Alt übernommen werden) |

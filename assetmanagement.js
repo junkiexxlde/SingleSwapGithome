@@ -1,13 +1,16 @@
 const INVENTORY_DB_NAME = 'MDMTool_Inventory';
-const INVENTORY_DB_VERSION = 2;
+const INVENTORY_DB_VERSION = 3;
 const INVENTORY_STORE = 'assets_inventory';
 const INVENTORY_DEFAULTS_STORE = 'inventory_defaults';
+const INVENTORY_MONTHLY_STORE = 'monthly_inventory_movements';
 const DEFAULTS_RECORD_ID = 'globalDefaults';
 const INVENTORY_CLEAR_ONCE_KEY = 'mdmtool_inventory_cleared_2026_04_19';
+const MANAGED_DEVICE_TYPES_KEY = 'mdmtool_managed_device_types_v1';
+const DEFAULT_DEVICE_TYPES = ['iPhone', 'iPad', 'MacBook'];
 
 const ASSET_COLUMNS = [
     { key: 'type', labelDe: 'Geraetetyp', labelEn: 'Device Type' },
-    { key: 'version', labelDe: 'Version', labelEn: 'Version' },
+    { key: 'version', labelDe: 'Typ', labelEn: 'Model' },
     { key: 'assetid', labelDe: 'Asset-ID', labelEn: 'Asset ID' },
     { key: 'serialnumber', labelDe: 'Seriennummer', labelEn: 'Serial Number' },
     { key: 'assigned', labelDe: 'Zugewiesen', labelEn: 'Assigned To' },
@@ -26,15 +29,6 @@ const HEADER_ALIASES = {
 
 const REQUIRED_IMPORT_KEYS = ['assetid'];
 const REQUIRED_DEFAULT_KEYS = ['assigned', 'managedby', 'costcenter'];
-const ALLOWED_DEVICE_TYPES = ['iphone', 'ipad', 'macbook'];
-const DEVICE_TYPE_ALIASES = {
-    iphone: 'iPhone',
-    'type-iphone': 'iPhone',
-    ipad: 'iPad',
-    'type-ipad': 'iPad',
-    macbook: 'MacBook',
-    'type-macbook': 'MacBook'
-};
 
 // Mirrors the selectable versions and data-type mapping from singleswap.html.
 const VERSION_DEVICE_TYPE_MAP = {
@@ -54,11 +48,15 @@ const VERSION_DEVICE_TYPE_MAP = {
 let assetRows = [];
 let selectedFile = null;
 let lastValidationReport = [];
+let currentPage = 1;
+const PAGE_SIZE = 10;
 let inventoryDefaults = {
     assigned: '',
     managedby: '',
     costcenter: ''
 };
+let managedDeviceTypes = [...DEFAULT_DEVICE_TYPES];
+let editingTypeName = '';
 
 const fileInput = document.getElementById('assetFileInput');
 const pickFileButton = document.getElementById('assetPickFile');
@@ -73,6 +71,13 @@ const validationTitle = document.getElementById('assetValidationTitle');
 const validationTableHead = document.querySelector('#assetValidationTable thead');
 const validationTableBody = document.querySelector('#assetValidationTable tbody');
 const validationRefreshButton = document.getElementById('assetValidationRefresh');
+const assetTypeFilter = document.getElementById('assetTypeFilter');
+const assetModelFilter = document.getElementById('assetModelFilter');
+const assetSearchInput = document.getElementById('assetSearchInput');
+const assetFilterReset = document.getElementById('assetFilterReset');
+const assetPagination = document.getElementById('assetPagination');
+const assetPaginationInfo = document.getElementById('assetPaginationInfo');
+const assetPaginationPages = document.getElementById('assetPaginationPages');
 
 const defaultAssignedInput = document.getElementById('defaultAssigned');
 const defaultManagedByInput = document.getElementById('defaultManagedBy');
@@ -81,6 +86,17 @@ const saveDefaultsButton = document.getElementById('saveDefaultsButton');
 const clearInventoryButton = document.getElementById('clearInventoryButton');
 const defaultsTableHead = document.querySelector('#assetDefaultsTable thead');
 const defaultsTableBody = document.querySelector('#assetDefaultsTable tbody');
+const settingsDefaultsTab = document.getElementById('assetSettingsDefaultsTab');
+const settingsAdminTab = document.getElementById('assetSettingsAdminTab');
+const settingsDefaultsPanel = document.getElementById('assetSettingsDefaultsPanel');
+const settingsAdminPanel = document.getElementById('assetSettingsAdminPanel');
+const assetAdminHeading = document.getElementById('assetAdminHeading');
+const assetAdminTypeLabel = document.getElementById('assetAdminTypeLabel');
+const assetAdminTypeInput = document.getElementById('assetAdminTypeInput');
+const assetAdminAcceptTypeButton = document.getElementById('assetAdminAcceptTypeButton');
+const assetAdminCancelEditButton = document.getElementById('assetAdminCancelEditButton');
+const assetTypeAdminTableHead = document.querySelector('#assetTypeAdminTable thead');
+const assetTypeAdminTableBody = document.querySelector('#assetTypeAdminTable tbody');
 
 function getCurrentLanguage() {
     return localStorage.getItem('language') || 'de';
@@ -140,12 +156,54 @@ function normalizeTypeValue(value) {
         .trim()
         .toLowerCase()
         .replace(/_/g, '-')
-        .replace(/\s+/g, '');
+        .replace(/\s+/g, '')
+        .replace(/^type-/, '');
 }
 
 function canonicalDeviceType(value) {
     const key = normalizeTypeValue(value);
-    return DEVICE_TYPE_ALIASES[key] || '';
+    const match = managedDeviceTypes.find((typeName) => normalizeTypeValue(typeName) === key);
+    return match || '';
+}
+
+function sanitizeManagedTypeName(value) {
+    return String(value || '').trim();
+}
+
+function uniqueSortedTypes(typeNames) {
+    const seen = new Set();
+    const output = [];
+
+    typeNames.forEach((typeName) => {
+        const clean = sanitizeManagedTypeName(typeName);
+        if (!clean) {
+            return;
+        }
+
+        const key = normalizeTypeValue(clean);
+        if (seen.has(key)) {
+            return;
+        }
+
+        seen.add(key);
+        output.push(clean);
+    });
+
+    return output.sort((left, right) => left.localeCompare(right, undefined, { sensitivity: 'base' }));
+}
+
+function loadManagedDeviceTypes() {
+    try {
+        const raw = localStorage.getItem(MANAGED_DEVICE_TYPES_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        managedDeviceTypes = uniqueSortedTypes([...DEFAULT_DEVICE_TYPES, ...(Array.isArray(parsed) ? parsed : [])]);
+    } catch {
+        managedDeviceTypes = uniqueSortedTypes(DEFAULT_DEVICE_TYPES);
+    }
+}
+
+function persistManagedDeviceTypes() {
+    localStorage.setItem(MANAGED_DEVICE_TYPES_KEY, JSON.stringify(managedDeviceTypes));
 }
 
 function normalizeVersionValue(value) {
@@ -174,6 +232,126 @@ function showStatus(message, isError = false) {
     statusBox.style.background = isError ? 'rgba(180, 73, 73, 0.14)' : 'rgba(52, 73, 99, 0.08)';
 }
 
+function normalizeFilterValue(value) {
+    return String(value || '').trim().toLowerCase();
+}
+
+function getCurrentFilterValues() {
+    return {
+        type: assetTypeFilter ? assetTypeFilter.value : '',
+        model: assetModelFilter ? assetModelFilter.value : '',
+        search: assetSearchInput ? assetSearchInput.value : ''
+    };
+}
+
+function getFilteredRows() {
+    const { type, model, search } = getCurrentFilterValues();
+    const searchTerm = normalizeFilterValue(search);
+
+    return assetRows.filter((row) => {
+        const typeMatches = !type || normalizeFilterValue(row.type) === normalizeFilterValue(type);
+        const modelMatches = !model || normalizeFilterValue(row.version) === normalizeFilterValue(model);
+        const searchMatches = !searchTerm
+            || normalizeFilterValue(row.assetid).includes(searchTerm)
+            || normalizeFilterValue(row.serialnumber).includes(searchTerm);
+        return typeMatches && modelMatches && searchMatches;
+    });
+}
+
+function buildUniqueValues(values) {
+    return Array.from(new Set(values.filter((value) => !!String(value || '').trim())))
+        .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+}
+
+function refreshTypeFilterOptions() {
+    if (!assetTypeFilter) {
+        return;
+    }
+
+    const previousValue = assetTypeFilter.value;
+    const types = buildUniqueValues(assetRows.map((row) => row.type));
+    const allLabel = t('Alle Gerätetypen', 'All Device Types');
+
+    assetTypeFilter.innerHTML = [`<option value="">${escapeHtml(allLabel)}</option>`]
+        .concat(types.map((type) => `<option value="${escapeHtml(type)}">${escapeHtml(type)}</option>`))
+        .join('');
+
+    if (types.some((type) => normalizeFilterValue(type) === normalizeFilterValue(previousValue))) {
+        assetTypeFilter.value = previousValue;
+    }
+}
+
+function refreshModelFilterOptions() {
+    if (!assetModelFilter) {
+        return;
+    }
+
+    const previousValue = assetModelFilter.value;
+    const selectedType = assetTypeFilter ? assetTypeFilter.value : '';
+    const candidateRows = selectedType
+        ? assetRows.filter((row) => normalizeFilterValue(row.type) === normalizeFilterValue(selectedType))
+        : assetRows;
+    const models = buildUniqueValues(candidateRows.map((row) => row.version));
+    const allLabel = t('Alle Typen', 'All Models');
+
+    assetModelFilter.innerHTML = [`<option value="">${escapeHtml(allLabel)}</option>`]
+        .concat(models.map((model) => `<option value="${escapeHtml(model)}">${escapeHtml(model)}</option>`))
+        .join('');
+
+    if (models.some((model) => normalizeFilterValue(model) === normalizeFilterValue(previousValue))) {
+        assetModelFilter.value = previousValue;
+    }
+}
+
+function refreshFilterOptions() {
+    refreshTypeFilterOptions();
+    refreshModelFilterOptions();
+}
+
+function resetToFirstPage() {
+    currentPage = 1;
+}
+
+function getPaginationState(totalRows) {
+    const totalPages = Math.max(1, Math.ceil(totalRows / PAGE_SIZE));
+    currentPage = Math.min(Math.max(1, currentPage), totalPages);
+
+    const startIndex = (currentPage - 1) * PAGE_SIZE;
+    const endIndex = Math.min(startIndex + PAGE_SIZE, totalRows);
+
+    return {
+        totalPages,
+        startIndex,
+        endIndex
+    };
+}
+
+function renderPagination(totalRows) {
+    if (!assetPagination || !assetPaginationInfo || !assetPaginationPages) {
+        return;
+    }
+
+    if (totalRows <= PAGE_SIZE) {
+        assetPagination.classList.add('hidden');
+        assetPaginationInfo.textContent = '';
+        assetPaginationPages.innerHTML = '';
+        return;
+    }
+
+    const { totalPages, startIndex, endIndex } = getPaginationState(totalRows);
+    assetPagination.classList.remove('hidden');
+    assetPaginationInfo.textContent = t(
+        `Zeige ${startIndex + 1}–${endIndex} von ${totalRows} Einträgen`,
+        `Showing ${startIndex + 1}-${endIndex} of ${totalRows} entries`
+    );
+
+    assetPaginationPages.innerHTML = Array.from({ length: totalPages }, (_, index) => {
+        const page = index + 1;
+        const activeClass = page === currentPage ? ' active' : '';
+        return `<button type="button" class="button secondary asset-page-button${activeClass}" data-page="${page}">${page}</button>`;
+    }).join('');
+}
+
 function renderTable() {
     const lang = getCurrentLanguage();
 
@@ -185,10 +363,23 @@ function renderTable() {
     if (assetRows.length === 0) {
         const emptyText = t('Noch keine Daten vorhanden.', 'No data available yet.');
         tableBody.innerHTML = `<tr><td colspan="${ASSET_COLUMNS.length}">${emptyText}</td></tr>`;
+        renderPagination(0);
         return;
     }
 
-    const rowsHtml = assetRows
+    const filteredRows = getFilteredRows();
+
+    if (filteredRows.length === 0) {
+        const noMatchText = t('Keine passenden Assets für den aktuellen Filter.', 'No matching assets for the current filter.');
+        tableBody.innerHTML = `<tr><td colspan="${ASSET_COLUMNS.length}">${noMatchText}</td></tr>`;
+        renderPagination(0);
+        return;
+    }
+
+    const { startIndex, endIndex } = getPaginationState(filteredRows.length);
+    const visibleRows = filteredRows.slice(startIndex, endIndex);
+
+    const rowsHtml = visibleRows
         .map((row) => {
             const cells = ASSET_COLUMNS
                 .map((col) => `<td>${escapeHtml(row[col.key])}</td>`)
@@ -198,6 +389,7 @@ function renderTable() {
         .join('');
 
     tableBody.innerHTML = rowsHtml;
+    renderPagination(filteredRows.length);
 }
 
 function getColumnLabel(columnKey) {
@@ -249,6 +441,156 @@ function renderDefaultsTable() {
         .join('');
 }
 
+function renderAssetAdminTexts() {
+    if (settingsDefaultsTab) {
+        settingsDefaultsTab.textContent = t('Standardwerte', 'Default Values');
+    }
+    if (settingsAdminTab) {
+        settingsAdminTab.textContent = t('Asset Administration', 'Asset Administration');
+    }
+    if (assetAdminHeading) {
+        assetAdminHeading.textContent = t('Asset Administration', 'Asset Administration');
+    }
+    if (assetAdminTypeLabel) {
+        assetAdminTypeLabel.textContent = t('Neuen Geraetetyp anlegen oder bearbeiten', 'Add or edit device type');
+    }
+    if (assetAdminTypeInput) {
+        assetAdminTypeInput.placeholder = t('z. B. Surface', 'e.g. Surface');
+    }
+    if (assetAdminAcceptTypeButton) {
+        assetAdminAcceptTypeButton.textContent = editingTypeName
+            ? t('Typ speichern', 'Save type')
+            : t('Typ akzeptieren', 'Accept type');
+    }
+    if (assetAdminCancelEditButton) {
+        assetAdminCancelEditButton.textContent = t('Bearbeitung abbrechen', 'Cancel edit');
+    }
+}
+
+function renderAssetTypeAdminTable() {
+    if (!assetTypeAdminTableHead || !assetTypeAdminTableBody) {
+        return;
+    }
+
+    assetTypeAdminTableHead.innerHTML = `<tr>
+        <th>${t('Geraetetyp', 'Device Type')}</th>
+        <th>${t('Status', 'Status')}</th>
+        <th>${t('Aktionen', 'Actions')}</th>
+    </tr>`;
+
+    assetTypeAdminTableBody.innerHTML = managedDeviceTypes
+        .map((typeName) => {
+            const normalized = normalizeTypeValue(typeName);
+            const isDefaultType = DEFAULT_DEVICE_TYPES.some((defaultType) => normalizeTypeValue(defaultType) === normalized);
+            const statusLabel = isDefaultType ? t('Standard', 'Default') : t('Akzeptiert', 'Accepted');
+            const editLabel = t('Bearbeiten', 'Edit');
+            const deleteLabel = t('Entfernen', 'Remove');
+            const removeDisabled = isDefaultType ? 'disabled' : '';
+
+            return `<tr>
+                <td>${escapeHtml(typeName)}</td>
+                <td>${escapeHtml(statusLabel)}</td>
+                <td>
+                    <div class="asset-type-admin-actions">
+                        <button type="button" class="button secondary" data-action="edit" data-type="${escapeHtml(typeName)}">${escapeHtml(editLabel)}</button>
+                        <button type="button" class="button secondary" data-action="remove" data-type="${escapeHtml(typeName)}" ${removeDisabled}>${escapeHtml(deleteLabel)}</button>
+                    </div>
+                </td>
+            </tr>`;
+        })
+        .join('');
+}
+
+function clearTypeEditMode() {
+    editingTypeName = '';
+    if (assetAdminTypeInput) {
+        assetAdminTypeInput.value = '';
+    }
+    if (assetAdminCancelEditButton) {
+        assetAdminCancelEditButton.classList.add('hidden');
+    }
+    renderAssetAdminTexts();
+}
+
+function setTypeEditMode(typeName) {
+    editingTypeName = typeName;
+    if (assetAdminTypeInput) {
+        assetAdminTypeInput.value = typeName;
+        assetAdminTypeInput.focus();
+    }
+    if (assetAdminCancelEditButton) {
+        assetAdminCancelEditButton.classList.remove('hidden');
+    }
+    renderAssetAdminTexts();
+}
+
+function saveAcceptedDeviceType() {
+    const inputValue = sanitizeManagedTypeName(assetAdminTypeInput?.value || '');
+    if (!inputValue) {
+        showStatus(t('Bitte einen Geraetetyp eingeben.', 'Please enter a device type.'), true);
+        return;
+    }
+
+    const inputKey = normalizeTypeValue(inputValue);
+    const existingType = managedDeviceTypes.find((typeName) => normalizeTypeValue(typeName) === inputKey);
+
+    if (!editingTypeName && existingType) {
+        showStatus(t(`Geraetetyp bereits vorhanden: ${existingType}`, `Device type already exists: ${existingType}`), true);
+        return;
+    }
+
+    let nextTypes = managedDeviceTypes.filter((typeName) => normalizeTypeValue(typeName) !== normalizeTypeValue(editingTypeName));
+    nextTypes = uniqueSortedTypes([...nextTypes, inputValue]);
+    managedDeviceTypes = nextTypes;
+    persistManagedDeviceTypes();
+    clearTypeEditMode();
+    renderAssetTypeAdminTable();
+    showStatus(t('Geraetetyp erfolgreich aktualisiert.', 'Device type updated successfully.'));
+}
+
+function removeAcceptedDeviceType(typeName) {
+    const isDefaultType = DEFAULT_DEVICE_TYPES.some((defaultType) => normalizeTypeValue(defaultType) === normalizeTypeValue(typeName));
+    if (isDefaultType) {
+        showStatus(t('Standardtypen koennen nicht entfernt werden.', 'Default types cannot be removed.'), true);
+        return;
+    }
+
+    managedDeviceTypes = managedDeviceTypes.filter((entry) => normalizeTypeValue(entry) !== normalizeTypeValue(typeName));
+    persistManagedDeviceTypes();
+    if (editingTypeName && normalizeTypeValue(editingTypeName) === normalizeTypeValue(typeName)) {
+        clearTypeEditMode();
+    }
+    renderAssetTypeAdminTable();
+    showStatus(t('Geraetetyp entfernt.', 'Device type removed.'));
+}
+
+function setSettingsPanelExpanded(targetPanelId, expanded) {
+    if (!settingsDefaultsPanel || !settingsAdminPanel || !settingsDefaultsTab || !settingsAdminTab) {
+        return;
+    }
+
+    const isDefaultsPanel = targetPanelId === 'assetSettingsDefaultsPanel';
+    const panel = isDefaultsPanel ? settingsDefaultsPanel : settingsAdminPanel;
+    const button = isDefaultsPanel ? settingsDefaultsTab : settingsAdminTab;
+
+    panel.classList.toggle('hidden', !expanded);
+    panel.setAttribute('aria-hidden', expanded ? 'false' : 'true');
+    button.classList.toggle('active', expanded);
+    button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+}
+
+function isSettingsPanelExpanded(targetPanelId) {
+    if (targetPanelId === 'assetSettingsDefaultsPanel') {
+        return settingsDefaultsPanel && !settingsDefaultsPanel.classList.contains('hidden');
+    }
+    return settingsAdminPanel && !settingsAdminPanel.classList.contains('hidden');
+}
+
+function toggleSettingsPanel(targetPanelId) {
+    const nextExpanded = !isSettingsPanelExpanded(targetPanelId);
+    setSettingsPanelExpanded(targetPanelId, nextExpanded);
+}
+
 function validateDefaultValues(defaults) {
     const missing = REQUIRED_DEFAULT_KEYS.filter((key) => !defaults[key]);
     return missing;
@@ -285,20 +627,11 @@ function validateRowData(row) {
 
     const versionExpectedType = expectedTypeForVersion(row.version);
 
-    if (row.version && !versionExpectedType) {
-        errors.push(
-            t(
-                `Unbekannte Version: ${row.version}`,
-                `Unknown version: ${row.version}`
-            )
-        );
-    }
-
     if (versionExpectedType && !normalizedType) {
         errors.push(
             t(
-                `Geraetetyp fehlt fuer Version: ${row.version}`,
-                `Device type is missing for version: ${row.version}`
+                `Geraetetyp fehlt fuer Typ: ${row.version}`,
+                `Device type is missing for model: ${row.version}`
             )
         );
     }
@@ -306,8 +639,8 @@ function validateRowData(row) {
     if (versionExpectedType && normalizedType && versionExpectedType !== normalizedType) {
         errors.push(
             t(
-                `Geraetetyp und Version passen nicht zusammen: ${row.type} / ${row.version}`,
-                `Device type and version do not match: ${row.type} / ${row.version}`
+                `Geraetetyp und Typ passen nicht zusammen: ${row.type} / ${row.version}`,
+                `Device type and model do not match: ${row.type} / ${row.version}`
             )
         );
     }
@@ -534,6 +867,8 @@ async function importFile(file) {
     }
 
     assetRows = merged;
+    refreshFilterOptions();
+    resetToFirstPage();
     renderTable();
     renderValidationReport(reportRows);
 
@@ -582,6 +917,9 @@ function openInventoryDb() {
             if (!db.objectStoreNames.contains(INVENTORY_DEFAULTS_STORE)) {
                 db.createObjectStore(INVENTORY_DEFAULTS_STORE, { keyPath: 'id' });
             }
+            if (!db.objectStoreNames.contains(INVENTORY_MONTHLY_STORE)) {
+                db.createObjectStore(INVENTORY_MONTHLY_STORE, { keyPath: 'id' });
+            }
         };
         request.onsuccess = () => resolve(request.result);
     });
@@ -628,7 +966,53 @@ async function saveDefaultsToDb(defaults) {
     db.close();
 }
 
+async function applyDefaultsToExistingRows(defaults) {
+    if (!Array.isArray(assetRows) || assetRows.length === 0) {
+        return 0;
+    }
+
+    const updatedRows = assetRows.map((row) =>
+        sanitizeRow({
+            ...row,
+            assigned: defaults.assigned,
+            managedby: defaults.managedby,
+            costcenter: defaults.costcenter
+        })
+    );
+
+    const db = await openInventoryDb();
+    await new Promise((resolve, reject) => {
+        const tx = db.transaction(INVENTORY_STORE, 'readwrite');
+        const store = tx.objectStore(INVENTORY_STORE);
+
+        const clearRequest = store.clear();
+        clearRequest.onerror = () => reject(clearRequest.error);
+        clearRequest.onsuccess = () => {
+            updatedRows.forEach((row) => {
+                store.put({ ...row, assetidKey: assetIdKeyFromRow(row) });
+            });
+        };
+
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error);
+    });
+    db.close();
+
+    assetRows = updatedRows;
+    refreshFilterOptions();
+    resetToFirstPage();
+    renderTable();
+    return updatedRows.length;
+}
+
 async function bootstrapRowsAndDefaults() {
+    loadManagedDeviceTypes();
+    setSettingsPanelExpanded('assetSettingsDefaultsPanel', false);
+    setSettingsPanelExpanded('assetSettingsAdminPanel', false);
+    clearTypeEditMode();
+    renderAssetTypeAdminTable();
+
     try {
         const db = await openInventoryDb();
         const clearedNow = await clearImportedInventoryOnceIfNeeded(db);
@@ -648,9 +1032,12 @@ async function bootstrapRowsAndDefaults() {
         db.close();
 
         assetRows = rows;
+        refreshFilterOptions();
+        resetToFirstPage();
         renderTable();
         applyDefaultsToInputs(inventoryDefaults);
         renderDefaultsTable();
+        renderAssetAdminTexts();
 
         showStatus(
             clearedNow
@@ -662,9 +1049,12 @@ async function bootstrapRowsAndDefaults() {
     } catch {
         assetRows = [];
         inventoryDefaults = { assigned: '', managedby: '', costcenter: '' };
+        refreshFilterOptions();
+        resetToFirstPage();
         renderTable();
         applyDefaultsToInputs(inventoryDefaults);
         renderDefaultsTable();
+        renderAssetAdminTexts();
         showStatus(t('Konnte die Lagerliste nicht laden.', 'Could not load inventory list.'), true);
     }
 }
@@ -675,8 +1065,13 @@ async function handleSaveDefaults() {
 
     try {
         await saveDefaultsToDb(defaults);
+        const updatedCount = await applyDefaultsToExistingRows(defaults);
         renderDefaultsTable();
-        showStatus(t('Standardwerte gespeichert.', 'Default values saved.'));
+        showStatus(
+            updatedCount > 0
+                ? t(`Standardwerte gespeichert und auf ${updatedCount} Datensätze angewendet.`, `Default values saved and applied to ${updatedCount} records.`)
+                : t('Standardwerte gespeichert.', 'Default values saved.')
+        );
     } catch {
         showStatus(t('Standardwerte konnten nicht gespeichert werden.', 'Could not save default values.'), true);
     }
@@ -711,6 +1106,17 @@ async function handleClearInventory() {
         if (fileInput) {
             fileInput.value = '';
         }
+        if (assetTypeFilter) {
+            assetTypeFilter.value = '';
+        }
+        if (assetModelFilter) {
+            assetModelFilter.value = '';
+        }
+        if (assetSearchInput) {
+            assetSearchInput.value = '';
+        }
+        refreshFilterOptions();
+        resetToFirstPage();
         renderTable();
         renderValidationReport([]);
         showStatus(t('Alle Datensätze wurden gelöscht.', 'All records were deleted.'));
@@ -720,6 +1126,52 @@ async function handleClearInventory() {
 }
 
 function bindEvents() {
+    if (settingsDefaultsTab) {
+        settingsDefaultsTab.addEventListener('click', () => toggleSettingsPanel('assetSettingsDefaultsPanel'));
+    }
+
+    if (settingsAdminTab) {
+        settingsAdminTab.addEventListener('click', () => toggleSettingsPanel('assetSettingsAdminPanel'));
+    }
+
+    if (assetAdminAcceptTypeButton) {
+        assetAdminAcceptTypeButton.addEventListener('click', () => saveAcceptedDeviceType());
+    }
+
+    if (assetAdminTypeInput) {
+        assetAdminTypeInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                saveAcceptedDeviceType();
+            }
+        });
+    }
+
+    if (assetAdminCancelEditButton) {
+        assetAdminCancelEditButton.addEventListener('click', () => clearTypeEditMode());
+    }
+
+    if (assetTypeAdminTableBody) {
+        assetTypeAdminTableBody.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-action][data-type]');
+            if (!button) {
+                return;
+            }
+
+            const action = button.getAttribute('data-action');
+            const typeName = button.getAttribute('data-type') || '';
+
+            if (action === 'edit') {
+                setTypeEditMode(typeName);
+                return;
+            }
+
+            if (action === 'remove') {
+                removeAcceptedDeviceType(typeName);
+            }
+        });
+    }
+
     pickFileButton.addEventListener('click', () => fileInput.click());
 
     fileInput.addEventListener('change', () => {
@@ -768,10 +1220,69 @@ function bindEvents() {
         });
     }
 
+    if (assetTypeFilter) {
+        assetTypeFilter.addEventListener('change', () => {
+            refreshModelFilterOptions();
+            resetToFirstPage();
+            renderTable();
+        });
+    }
+
+    if (assetModelFilter) {
+        assetModelFilter.addEventListener('change', () => {
+            resetToFirstPage();
+            renderTable();
+        });
+    }
+
+    if (assetSearchInput) {
+        assetSearchInput.addEventListener('input', () => {
+            resetToFirstPage();
+            renderTable();
+        });
+    }
+
+    if (assetFilterReset) {
+        assetFilterReset.addEventListener('click', () => {
+            if (assetTypeFilter) {
+                assetTypeFilter.value = '';
+            }
+            if (assetModelFilter) {
+                assetModelFilter.value = '';
+            }
+            if (assetSearchInput) {
+                assetSearchInput.value = '';
+            }
+            refreshModelFilterOptions();
+            resetToFirstPage();
+            renderTable();
+        });
+    }
+
+    if (assetPaginationPages) {
+        assetPaginationPages.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-page]');
+            if (!button) {
+                return;
+            }
+
+            const page = Number(button.getAttribute('data-page'));
+            if (!Number.isFinite(page) || page < 1) {
+                return;
+            }
+
+            currentPage = page;
+            renderTable();
+        });
+    }
+
     document.addEventListener('mdm-language-changed', () => {
+        refreshFilterOptions();
         renderTable();
         renderValidationReport(lastValidationReport);
         renderDefaultsTable();
+        renderAssetAdminTexts();
+        renderAssetTypeAdminTable();
     });
 }
 

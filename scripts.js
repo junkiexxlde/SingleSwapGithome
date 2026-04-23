@@ -4,13 +4,13 @@ const translations = {
         "title": "Lars Junker - Mobile Device Warranty Management Tool [MDWMT]",
         "type-label": "Gerätetyp:<span class=\"required\" aria-hidden=\"true\">*</span>",
         "name-label": "Name:",
-        "version-label": "Version:<span class=\"required\" aria-hidden=\"true\">*</span>",
+        "version-label": "Typ:<span class=\"required\" aria-hidden=\"true\">*</span>",
         "assetid-label": "Asset-ID:<span class=\"required\" aria-hidden=\"true\">*</span>",
         "serialnumber-label": "Seriennummer:",
         "user-label": "Anwender Name:",
         "userid-label": "Nutzer-ID:<span class=\"required\" aria-hidden=\"true\">*</span>",
         "userdata-label": "Nutzerdaten:",
-        "swap-reason-label": "Grund f&Uuml;r Austausch/Defekt:<span class=\"required\" aria-hidden=\"true\">*</span>",
+        "swap-reason-label": "Grund f&uuml;r Austausch/Defekt:<span class=\"required\" aria-hidden=\"true\">*</span>",
         "ticket-label": "Ticketnummer:<span class=\"required\" aria-hidden=\"true\">*</span>",
         "costcenter-label": "Kostenstelle:<span class=\"required\" aria-hidden=\"true\">*</span>",
         "save-dataset-button": "Datensatz speichern",
@@ -62,7 +62,7 @@ const translations = {
         "title": "Lars Junker - Mobile Device Warranty Management Tool [MDWMT]",
         "type-label": "Type:<span class=\"required\" aria-hidden=\"true\">*</span>",
         "name-label": "Name:",
-        "version-label": "Version:<span class=\"required\" aria-hidden=\"true\">*</span>",
+        "version-label": "Model:<span class=\"required\" aria-hidden=\"true\">*</span>",
         "assetid-label": "Asset ID:<span class=\"required\" aria-hidden=\"true\">*</span>",
         "serialnumber-label": "Serial Number:",
         "user-label": "Username:",
@@ -106,7 +106,7 @@ const translations = {
         "sim-card-removed": "SIM card removed",
         "printed-at": "Printed:",
         "dataset-selector-label": "Select Dataset:",
-        "select-ticket-label": "Ticketnumber",
+        "select-ticket-label": "Ticket Number",
         "search-placeholder": "Search by ticket number...",
         "search-label": "Search:",
         "load-last-dataset-button": "Load Last Saved Dataset",
@@ -139,6 +139,8 @@ translations.de['nav-home'] = "Startseite";
 translations.de['nav-new-case'] = "Neuen Fall anlegen";
 translations.de['nav-overview'] = "Übersicht";
 translations.de['nav-assets'] = "Assets verwalten";
+translations.de['singleswap-settings-title'] = "Weitere Aktionen";
+translations.de['to-overview-button'] = "zur Übersicht";
 translations.de['settings-placeholder'] = "Einstellungsmenü folgt.";
 translations.de['overview-heading'] = "Übersicht";
 translations.de['overview-search-title'] = "Fälle durchsuchen";
@@ -181,6 +183,8 @@ translations.en['nav-home'] = "Home";
 translations.en['nav-new-case'] = "Create New Case";
 translations.en['nav-overview'] = "Overview";
 translations.en['nav-assets'] = "Manage Assets";
+translations.en['singleswap-settings-title'] = "More Actions";
+translations.en['to-overview-button'] = "To Overview";
 translations.en['settings-placeholder'] = "Settings menu coming soon.";
 translations.en['overview-heading'] = "Overview";
 translations.en['overview-search-title'] = "Search Cases";
@@ -206,21 +210,21 @@ translations.en['sig-date-only'] = "Date:";
 // Add CSV header labels
 translations.de['csv-header-ticket'] = "Ticketnummer";
 translations.de['csv-header-type'] = "Gerätetyp";
-translations.de['csv-header-version'] = "Version";
+translations.de['csv-header-version'] = "Typ";
 translations.de['csv-header-assetid'] = "Asset-ID";
 translations.de['csv-header-serialnumber'] = "Seriennummer";
 translations.de['csv-header-user'] = "Nutzer";
 translations.de['csv-header-userid'] = "Nutzer-ID";
 translations.de['csv-header-userdata'] = "Nutzerdaten";
-translations.de['csv-header-swapreason'] = "Grund f&Uuml;r Austausch/Defekt";
+translations.de['csv-header-swapreason'] = "Grund f&uuml;r Austausch/Defekt";
 translations.de['csv-header-costcenter'] = "Kostenstelle";
-translations.de['assetid-select-prereq'] = "-- Erst Gerätetyp und Version wählen --";
+translations.de['assetid-select-prereq'] = "-- Erst Gerätetyp und Typ wählen --";
 translations.de['assetid-select-empty'] = "-- Keine passende Asset-ID verfügbar --";
 translations.de['assetid-select-default'] = "-- Asset-ID auswählen --";
 
 translations.en['csv-header-ticket'] = "Ticket Number";
 translations.en['csv-header-type'] = "Device Type";
-translations.en['csv-header-version'] = "Version";
+translations.en['csv-header-version'] = "Model";
 translations.en['csv-header-assetid'] = "Asset ID";
 translations.en['csv-header-serialnumber'] = "Serial Number";
 translations.en['csv-header-user'] = "User";
@@ -228,7 +232,7 @@ translations.en['csv-header-userid'] = "User ID";
 translations.en['csv-header-userdata'] = "User Data";
 translations.en['csv-header-swapreason'] = "Reason for swap/defect";
 translations.en['csv-header-costcenter'] = "Cost Center";
-translations.en['assetid-select-prereq'] = "-- Select device type and version first --";
+translations.en['assetid-select-prereq'] = "-- Select device type and model first --";
 translations.en['assetid-select-empty'] = "-- No matching Asset ID available --";
 translations.en['assetid-select-default'] = "-- Select Asset ID --";
 translations.de['export-format-csv'] = 'CSV';
@@ -242,9 +246,13 @@ translations.en['export-format-ods'] = 'LibreOffice (.ods)';
 translations.en['export-format-missing-lib'] = 'Export as XLSX/ODS unavailable: XLSX library missing.';
 
 const INVENTORY_DB_NAME = 'MDMTool_Inventory';
-const INVENTORY_DB_VERSION = 2;
+const INVENTORY_DB_VERSION = 3;
 const INVENTORY_STORE = 'assets_inventory';
+const INVENTORY_MONTHLY_STORE = 'monthly_inventory_movements';
+const MANAGED_DEVICE_TYPES_KEY = 'mdmtool_managed_device_types_v1';
+const DEFAULT_DEVICE_TYPES = ['iPhone', 'iPad', 'MacBook'];
 let inventoryAssets = [];
+let versionFilterRefreshers = [];
 
 // Sprachumschaltung
 let currentLanguage = 'de';
@@ -272,12 +280,85 @@ function openInventoryDbForAssets() {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(INVENTORY_DB_NAME, INVENTORY_DB_VERSION);
         request.onerror = () => reject(request.error);
+        request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(INVENTORY_STORE)) {
+                db.createObjectStore(INVENTORY_STORE, { keyPath: 'assetidKey' });
+            }
+            if (!db.objectStoreNames.contains(INVENTORY_MONTHLY_STORE)) {
+                db.createObjectStore(INVENTORY_MONTHLY_STORE, { keyPath: 'id' });
+            }
+        };
         request.onsuccess = () => resolve(request.result);
     });
 }
 
 function normalizeInventoryValue(value) {
     return String(value || '').trim().toLowerCase();
+}
+
+function normalizeTypeToken(value) {
+    return String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/_/g, '-')
+        .replace(/\s+/g, '')
+        .replace(/^type-/, '');
+}
+
+function loadManagedDeviceTypes() {
+    try {
+        const raw = localStorage.getItem(MANAGED_DEVICE_TYPES_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        const source = [...DEFAULT_DEVICE_TYPES, ...(Array.isArray(parsed) ? parsed : [])];
+        const seen = new Set();
+        const values = [];
+
+        source.forEach((entry) => {
+            const clean = String(entry || '').trim();
+            if (!clean) {
+                return;
+            }
+            const key = normalizeTypeToken(clean);
+            if (seen.has(key)) {
+                return;
+            }
+            seen.add(key);
+            values.push(clean);
+        });
+
+        return values.sort((left, right) => left.localeCompare(right, undefined, { sensitivity: 'base' }));
+    } catch {
+        return [...DEFAULT_DEVICE_TYPES];
+    }
+}
+
+function syncManagedTypeOptions() {
+    const managedTypes = loadManagedDeviceTypes();
+
+    ['old-type', 'new-type'].forEach((selectId) => {
+        const selectEl = document.getElementById(selectId);
+        if (!selectEl) {
+            return;
+        }
+
+        Array.from(selectEl.querySelectorAll('option[data-managed-type="1"]')).forEach((option) => option.remove());
+        const existingKeys = new Set(Array.from(selectEl.options).map((option) => normalizeTypeToken(option.value)));
+
+        managedTypes.forEach((typeName) => {
+            const key = normalizeTypeToken(typeName);
+            if (existingKeys.has(key)) {
+                return;
+            }
+
+            const option = document.createElement('option');
+            option.value = typeName;
+            option.textContent = typeName;
+            option.setAttribute('data-managed-type', '1');
+            selectEl.appendChild(option);
+            existingKeys.add(key);
+        });
+    });
 }
 
 function buildAssetOptionLabel(asset) {
@@ -395,6 +476,8 @@ async function loadInventoryAssets() {
         inventoryAssets = [];
     }
 
+    syncManagedTypeOptions();
+    refreshAllVersionFilters();
     updateNewAssetIdOptions();
 }
 
@@ -441,6 +524,8 @@ function setLanguage(lang) {
     // refresh any dynamic labels not bound with data-i18n
     if (typeof refreshButtonLabels === 'function') refreshButtonLabels();
     if (typeof applyIpadNoReplacementFormState === 'function') applyIpadNoReplacementFormState();
+    syncManagedTypeOptions();
+    refreshAllVersionFilters();
     updateNewAssetIdOptions();
     // update document title from translations when available
     if (translations[lang] && translations[lang]['title']) {
@@ -1826,7 +1911,7 @@ function exportSingleDatasetToCSV(dataset) {
     const headers = [
         'Ticket Number (New)',
         'Old Device Type',
-        'Old Device Version',
+        'Old Device Model',
         'Old Asset ID',
         'Old Serial Number',
         'Old User',
@@ -1835,7 +1920,7 @@ function exportSingleDatasetToCSV(dataset) {
         'Old Swap Reason / Defect',
         'Old Cost Center',
         'New Device Type',
-        'New Device Version',
+        'New Device Model',
         'New Asset ID',
         'New Serial Number',
         'New User',
@@ -1943,7 +2028,7 @@ function getDatasetExportHeaders() {
     return [
         'Ticket Number (New)',
         'Old Device Type',
-        'Old Device Version',
+        'Old Device Model',
         'Old Asset ID',
         'Old Serial Number',
         'Old User',
@@ -1952,7 +2037,7 @@ function getDatasetExportHeaders() {
         'Old Swap Reason / Defect',
         'Old Cost Center',
         'New Device Type',
-        'New Device Version',
+        'New Device Model',
         'New Asset ID',
         'New Serial Number',
         'New User',
@@ -2798,42 +2883,98 @@ translations.en.export-button = "Export";*/
     if (isLightMode()) start();
 })();
 
-// Filter version options based on device type selection
+function refreshAllVersionFilters() {
+    versionFilterRefreshers.forEach((refreshFn) => {
+        if (typeof refreshFn === 'function') {
+            refreshFn();
+        }
+    });
+}
+
+function getInventoryModelsForType(typeName) {
+    const selectedTypeKey = normalizeInventoryValue(typeName);
+    if (!selectedTypeKey) {
+        return [];
+    }
+
+    return Array.from(new Set(
+        inventoryAssets
+            .filter((asset) => normalizeInventoryValue(asset.type) === selectedTypeKey)
+            .map((asset) => String(asset.version || '').trim())
+            .filter((value) => !!value)
+    )).sort((left, right) => left.localeCompare(right, undefined, { sensitivity: 'base' }));
+}
+
+// Filter version options based on device type selection.
 function filterVersionOptions(typeSelectId, versionSelectId) {
     const typeSelect = document.getElementById(typeSelectId);
     const versionSelect = document.getElementById(versionSelectId);
     
     if (!typeSelect || !versionSelect) return;
-    
+
     const updateVersions = () => {
         const selectedType = typeSelect.value;
         const currentValue = versionSelect.value;
-        
-        // Show/hide options based on selected type
+
+        Array.from(versionSelect.querySelectorAll('option[data-dynamic-version="1"]')).forEach((option) => option.remove());
+    
         Array.from(versionSelect.options).forEach(option => {
             if (option.value === '') {
-                // Always show the placeholder option
                 option.hidden = false;
             } else {
                 const optionType = option.getAttribute('data-type');
                 option.hidden = selectedType ? optionType !== selectedType : false;
             }
         });
+
+        const valuesInSelect = new Set(Array.from(versionSelect.options).map((option) => normalizeInventoryValue(option.value)));
+        const dynamicModels = selectedType ? getInventoryModelsForType(selectedType) : [];
+
+        dynamicModels.forEach((model) => {
+            if (valuesInSelect.has(normalizeInventoryValue(model))) {
+                return;
+            }
+
+            const option = document.createElement('option');
+            option.value = model;
+            option.textContent = model;
+            option.setAttribute('data-type', selectedType);
+            option.setAttribute('data-dynamic-version', '1');
+            versionSelect.appendChild(option);
+            valuesInSelect.add(normalizeInventoryValue(model));
+        });
+
+        const visibleOptions = Array.from(versionSelect.options).filter((option) => option.value !== '' && !option.hidden);
+        if (selectedType && visibleOptions.length === 0) {
+            const fallbackOption = document.createElement('option');
+            fallbackOption.value = selectedType;
+            fallbackOption.textContent = selectedType;
+            fallbackOption.setAttribute('data-type', selectedType);
+            fallbackOption.setAttribute('data-dynamic-version', '1');
+            versionSelect.appendChild(fallbackOption);
+        }
         
-        // If current value is hidden, reset to empty
-        if (versionSelect.value && versionSelect.options[versionSelect.selectedIndex].hidden) {
+        const stillExists = Array.from(versionSelect.options).some((option) => option.value === currentValue && !option.hidden);
+        if (currentValue && stillExists) {
+            versionSelect.value = currentValue;
+        } else {
             versionSelect.value = '';
+        }
+
+        if (typeSelectId === 'new-type' && typeof updateNewAssetIdOptions === 'function') {
+            updateNewAssetIdOptions();
         }
     };
     
     typeSelect.addEventListener('change', updateVersions);
+    versionFilterRefreshers.push(updateVersions);
     
-    // Initial filter on page load
     updateVersions();
 }
 
 // Initialize version filtering for both old and new device forms
 document.addEventListener('DOMContentLoaded', () => {
+    syncManagedTypeOptions();
     filterVersionOptions('old-type', 'old-version');
     filterVersionOptions('new-type', 'new-version');
     loadInventoryAssets();

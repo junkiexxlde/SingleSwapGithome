@@ -27,29 +27,76 @@
             <a href="singleswap.html" data-i18n="nav-new-case">Neuen Fall anlegen</a>
             <a href="overview.html" data-i18n="nav-overview">Übersicht</a>
             <a href="assetmanagement.html" data-i18n="nav-assets">Assets verwalten</a>
+            <a href="monthlyinventory.html" data-i18n="nav-monthly-inventory">Monatsinventur</a>
         </nav>
     </aside>
     <div id="menu-backdrop" class="menu-backdrop hidden"></div>
     <div id="settings-menu" class="settings-menu hidden">
         <div class="asset-settings-panel">
-            <h3 data-i18n="asset-settings-title">Standardwerte</h3>
-            <label for="defaultAssigned" data-i18n="asset-default-assigned-label">Zugewiesen</label>
-            <input id="defaultAssigned" type="text" class="asset-settings-input" data-i18n-placeholder="asset-default-assigned-placeholder" placeholder="z. B. Team Support">
+            <div class="asset-settings-menu" aria-label="Asset Settings">
+                <div class="asset-settings-item">
+                    <button
+                        id="assetSettingsDefaultsTab"
+                        type="button"
+                        class="asset-settings-menu-item"
+                        data-target="assetSettingsDefaultsPanel"
+                        aria-controls="assetSettingsDefaultsPanel"
+                        aria-expanded="false"
+                    >
+                        Standardwerte
+                    </button>
 
-            <label for="defaultManagedBy" data-i18n="asset-default-managedby-label">Verwaltet von</label>
-            <input id="defaultManagedBy" type="text" class="asset-settings-input" data-i18n-placeholder="asset-default-managedby-placeholder" placeholder="z. B. IT Service">
+                    <div id="assetSettingsDefaultsPanel" class="asset-settings-section hidden" aria-hidden="true">
+                        <h3 data-i18n="asset-settings-title">Standardwerte</h3>
+                        <label for="defaultAssigned" data-i18n="asset-default-assigned-label">Zugewiesen</label>
+                        <input id="defaultAssigned" type="text" class="asset-settings-input" data-i18n-placeholder="asset-default-assigned-placeholder" placeholder="z. B. Team Support">
 
-            <label for="defaultCostcenter" data-i18n="asset-default-costcenter-label">Kostenstelle</label>
-            <input id="defaultCostcenter" type="text" class="asset-settings-input" data-i18n-placeholder="asset-default-costcenter-placeholder" placeholder="z. B. 1100">
+                        <label for="defaultManagedBy" data-i18n="asset-default-managedby-label">Verwaltet von</label>
+                        <input id="defaultManagedBy" type="text" class="asset-settings-input" data-i18n-placeholder="asset-default-managedby-placeholder" placeholder="z. B. IT Service">
 
-            <button id="saveDefaultsButton" type="button" class="button secondary" data-i18n="asset-default-save-button">Standardwerte speichern</button>
-            <button id="clearInventoryButton" type="button" class="button secondary" data-i18n="asset-clear-inventory-button">Alle Datensätze löschen</button>
+                        <label for="defaultCostcenter" data-i18n="asset-default-costcenter-label">Kostenstelle</label>
+                        <input id="defaultCostcenter" type="text" class="asset-settings-input" data-i18n-placeholder="asset-default-costcenter-placeholder" placeholder="z. B. 1100">
 
-            <div class="asset-defaults-table-wrap">
-                <table id="assetDefaultsTable" class="asset-defaults-table">
-                    <thead></thead>
-                    <tbody></tbody>
-                </table>
+                        <button id="saveDefaultsButton" type="button" class="button secondary" data-i18n="asset-default-save-button">Standardwerte speichern</button>
+                        <button id="clearInventoryButton" type="button" class="button secondary" data-i18n="asset-clear-inventory-button">Alle Datensätze löschen</button>
+
+                        <div class="asset-defaults-table-wrap">
+                            <table id="assetDefaultsTable" class="asset-defaults-table">
+                                <thead></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="asset-settings-item">
+                    <button
+                        id="assetSettingsAdminTab"
+                        type="button"
+                        class="asset-settings-menu-item"
+                        data-target="assetSettingsAdminPanel"
+                        aria-controls="assetSettingsAdminPanel"
+                        aria-expanded="false"
+                    >
+                        Asset Administration
+                    </button>
+
+                    <div id="assetSettingsAdminPanel" class="asset-settings-section hidden" aria-hidden="true">
+                        <h3 id="assetAdminHeading">Asset Administration</h3>
+                        <label for="assetAdminTypeInput" id="assetAdminTypeLabel">Neuen Gerätetyp anlegen oder bearbeiten</label>
+                        <input id="assetAdminTypeInput" type="text" class="asset-settings-input" placeholder="z. B. Surface">
+                        <div class="asset-admin-actions">
+                            <button id="assetAdminAcceptTypeButton" type="button" class="button secondary">Typ akzeptieren</button>
+                            <button id="assetAdminCancelEditButton" type="button" class="button secondary hidden">Bearbeitung abbrechen</button>
+                        </div>
+                        <div class="asset-defaults-table-wrap">
+                            <table id="assetTypeAdminTable" class="asset-defaults-table">
+                                <thead></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -94,17 +141,51 @@
                     </div>
                 </div>
 
+                <div class="asset-filter-bar" aria-label="Filter">
+                    <div class="asset-filter-group">
+                        <label for="assetTypeFilter" data-i18n="asset-filter-type-label">Gerätetyp</label>
+                        <select id="assetTypeFilter">
+                            <option value="" data-i18n="asset-filter-all-types">Alle Gerätetypen</option>
+                        </select>
+                    </div>
+                    <div class="asset-filter-group">
+                        <label for="assetModelFilter" data-i18n="asset-filter-model-label">Typ</label>
+                        <select id="assetModelFilter">
+                            <option value="" data-i18n="asset-filter-all-models">Alle Typen</option>
+                        </select>
+                    </div>
+                    <div class="asset-filter-group">
+                        <label for="assetSearchInput" data-i18n="asset-filter-search-label">Suche</label>
+                        <input
+                            id="assetSearchInput"
+                            type="text"
+                            data-i18n-placeholder="asset-filter-search-placeholder"
+                            placeholder="Asset-ID oder Seriennummer"
+                            aria-label="Suche nach Asset-ID oder Seriennummer"
+                        >
+                    </div>
+                    <div class="asset-filter-group asset-filter-actions">
+                        <button id="assetFilterReset" type="button" class="button secondary" data-i18n="asset-filter-reset">Filter zurücksetzen</button>
+                    </div>
+                </div>
+
                 <div class="asset-table-wrap">
                     <table id="assetTable" class="asset-table">
                         <thead></thead>
                         <tbody></tbody>
                     </table>
                 </div>
+
+                <div id="assetPagination" class="asset-pagination hidden" aria-label="Pagination">
+                    <div id="assetPaginationInfo" class="asset-pagination-info"></div>
+                    <div id="assetPaginationPages" class="asset-pagination-actions"></div>
+                </div>
             </section>
             <a class="back-link back-assets" href="index.html" data-i18n="back-home">Zurück zur Startseite</a>
         </main>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="app-version.js"></script>
     <script src="navigation.js"></script>
     <script src="assetmanagement.js"></script>
 </body>

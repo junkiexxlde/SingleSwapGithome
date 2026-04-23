@@ -76,7 +76,7 @@ Import supports:
 
 Import reads only asset source fields from the file:
 - Device Type
-- Version
+- Device Model
 - Asset-ID
 - Serial Number
 
