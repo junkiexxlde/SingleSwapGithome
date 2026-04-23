@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n-title="asset-page-title">MDM Tool - Assets verwalten</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="landing-page asset-page has-topbar">
+    <div class="topbar">
+        <div class="topbar-left">
+            <button id="menu-toggle" class="toolbar-button" type="button" aria-label="Navigation Menu">☰</button>
+        </div>
+        <div class="topbar-title" data-i18n="app-shell-title">Mobile Device Warranty Management Tool</div>
+        <div class="topbar-right">
+            <div class="language-toggle compact-toggle">
+                <button id="lang-de" class="lang-button active" type="button">DE</button>
+                <button id="lang-en" class="lang-button" type="button">EN</button>
+            </div>
+            <button id="theme-toggle" class="toolbar-button" type="button" aria-label="Theme Toggle">🌙</button>
+            <button id="settings-toggle" class="toolbar-button" type="button" aria-label="Settings Menu">⚙</button>
+        </div>
+    </div>
+    <aside id="nav-drawer" class="nav-drawer" aria-hidden="true">
+        <nav class="drawer-nav">
+            <a href="index.html" data-i18n="nav-home">Startseite</a>
+            <a href="singleswap.html" data-i18n="nav-new-case">Neuen Fall anlegen</a>
+            <a href="overview.html" data-i18n="nav-overview">Übersicht</a>
+            <a href="assetmanagement.html" data-i18n="nav-assets">Assets verwalten</a>
+        </nav>
+    </aside>
+    <div id="menu-backdrop" class="menu-backdrop hidden"></div>
+    <div id="settings-menu" class="settings-menu hidden">
+        <div class="asset-settings-panel">
+            <h3 data-i18n="asset-settings-title">Standardwerte</h3>
+            <label for="defaultAssigned" data-i18n="asset-default-assigned-label">Zugewiesen</label>
+            <input id="defaultAssigned" type="text" class="asset-settings-input" data-i18n-placeholder="asset-default-assigned-placeholder" placeholder="z. B. Team Support">
+
+            <label for="defaultManagedBy" data-i18n="asset-default-managedby-label">Verwaltet von</label>
+            <input id="defaultManagedBy" type="text" class="asset-settings-input" data-i18n-placeholder="asset-default-managedby-placeholder" placeholder="z. B. IT Service">
+
+            <label for="defaultCostcenter" data-i18n="asset-default-costcenter-label">Kostenstelle</label>
+            <input id="defaultCostcenter" type="text" class="asset-settings-input" data-i18n-placeholder="asset-default-costcenter-placeholder" placeholder="z. B. 1100">
+
+            <button id="saveDefaultsButton" type="button" class="button secondary" data-i18n="asset-default-save-button">Standardwerte speichern</button>
+            <button id="clearInventoryButton" type="button" class="button secondary" data-i18n="asset-clear-inventory-button">Alle Datensätze löschen</button>
+
+            <div class="asset-defaults-table-wrap">
+                <table id="assetDefaultsTable" class="asset-defaults-table">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="subpage-layout">
+        <h1 class="subpage-heading hover-hint-title" data-i18n="asset-heading" data-i18n-titleattr="asset-description">Assets verwalten</h1>
+        <main class="card nav-shell">
+            <section class="asset-tools" aria-labelledby="assetToolsHeading">
+                <h2 id="assetToolsHeading" data-i18n="asset-tools-heading">Lagerlistenverwaltung</h2>
+
+                <div class="asset-actions-row">
+                    <div class="asset-action-card">
+                        <h3 class="hover-hint-title" data-i18n="asset-import-heading" data-i18n-titleattr="asset-import-hint">Import</h3>
+                        <input id="assetFileInput" class="hidden-file-input" type="file" accept=".csv,.xlsx,.xls,.ods" title="Datei wählen" aria-label="Datei wählen">
+                        <button id="assetPickFile" type="button" class="button secondary" data-i18n="asset-pick-file">Datei auswählen</button>
+                        <button id="assetImportButton" type="button" class="button secondary" data-i18n="asset-import-button">Import starten</button>
+                    </div>
+
+                    <div class="asset-action-card">
+                        <h3 class="hover-hint-title" data-i18n="asset-export-heading" data-i18n-titleattr="asset-export-hint">Export</h3>
+                        <button id="assetExportButton" type="button" class="button secondary" data-i18n="asset-export-button">Exportieren</button>
+                        <select id="assetExportFormat" title="Exportformat" aria-label="Exportformat">
+                            <option value="csv">CSV</option>
+                            <option value="xlsx">Excel (.xlsx)</option>
+                            <option value="ods">LibreOffice (.ods)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="assetStatus" class="asset-status" aria-live="polite"></div>
+
+                <div id="assetValidationReport" class="asset-validation-report hidden" aria-live="polite">
+                    <div class="asset-validation-header">
+                        <h3 id="assetValidationTitle">Validierungsbericht</h3>
+                        <button id="assetValidationRefresh" type="button" class="button secondary" data-i18n="asset-validation-refresh">Seite aktualisieren</button>
+                    </div>
+                    <div class="asset-validation-wrap">
+                        <table class="asset-validation-table" id="assetValidationTable">
+                            <thead></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="asset-table-wrap">
+                    <table id="assetTable" class="asset-table">
+                        <thead></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+            <a class="back-link back-assets" href="index.html" data-i18n="back-home">Zurück zur Startseite</a>
+        </main>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="navigation.js"></script>
+    <script src="assetmanagement.js"></script>
+</body>
+</html>

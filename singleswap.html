@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#000000">
+    <meta name="description" content="Mobile Device Warranty Management Tool - Manage device warranty swaps efficiently">
+    <title>Mobile Device Warranty Management Tool [MDWMT]</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23000000' width='192' height='192'/><text x='50%' y='50%' font-size='80' fill='%23ffffff' text-anchor='middle' dominant-baseline='middle' font-weight='bold'>MDW</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23000000' width='192' height='192'/><text x='50%' y='50%' font-size='80' fill='%23ffffff' text-anchor='middle' dominant-baseline='middle' font-weight='bold'>MDW</text></svg>">
+</head>
+<body class="has-topbar">
+    <div class="topbar">
+        <div class="topbar-left">
+            <button id="menu-toggle" class="toolbar-button" type="button" aria-label="Navigation Menu">☰</button>
+        </div>
+        <div class="topbar-title" data-i18n="app-shell-title">Mobile Device Warranty Management Tool</div>
+        <div class="topbar-right">
+            <div class="language-toggle compact-toggle">
+                <button id="lang-de" class="lang-button active" type="button">DE</button>
+                <button id="lang-en" class="lang-button" type="button">EN</button>
+            </div>
+            <button id="theme-toggle" class="toolbar-button" type="button" aria-label="Theme Toggle">🌙</button>
+            <button id="settings-toggle" class="toolbar-button" type="button" aria-label="Settings Menu">⚙</button>
+        </div>
+    </div>
+    <aside id="nav-drawer" class="nav-drawer" aria-hidden="true">
+        <nav class="drawer-nav">
+            <a href="index.html" data-i18n="nav-home">Startseite</a>
+            <a href="singleswap.html" data-i18n="nav-new-case">Neuen Fall anlegen</a>
+            <a href="overview.html" data-i18n="nav-overview">Übersicht</a>
+            <a href="assetmanagement.html" data-i18n="nav-assets">Assets verwalten</a>
+        </nav>
+    </aside>
+    <div id="menu-backdrop" class="menu-backdrop hidden"></div>
+    <div id="settings-menu" class="settings-menu hidden">
+        <span data-i18n="settings-placeholder">Einstellungsmenü folgt.</span>
+    </div>
+
+    <div class="container">
+
+        <div class="forms-row">
+            <!-- ALTES GERÄT -->
+            <div class="form-container old-device">
+                <h2>Alt</h2>
+                <div class="form-section">
+                    <div class="form-group">
+                        <label for="old-ticket" data-i18n="ticket-label">Ticketnummer:<span class="required" aria-hidden="true">*</span></label>
+                        <input type="text" id="old-ticket" name="ticket" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="old-type" data-i18n="type-label">Gerätetyp:<span class="required" aria-hidden="true">*</span></label>
+                        <select id="old-type" name="type" required>
+                            <option value="" data-i18n="select-default">-- Bitte auswählen --</option>
+                            <option value="iPhone" data-i18n="type-iphone">iPhone</option>
+                            <option value="iPad" data-i18n="type-ipad">iPad</option>
+                            <option value="MacBook" data-i18n="type-macbook">MacBook</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="old-version" data-i18n="version-label">Version:<span class="required" aria-hidden="true">*</span></label>
+                        <select id="old-version" name="version" required>
+                            <option value="" data-i18n="select-default">-- Bitte auswählen --</option>
+                            <option value="iPhone SE" data-i18n="version-iphone-se" data-type="iPhone">iPhone SE</option>
+                            <option value="iPhone 13" data-i18n="version-iphone-13" data-type="iPhone">iPhone 13</option>
+                            <option value="iPhone 15" data-i18n="version-iphone-15" data-type="iPhone">iPhone 15</option>
+                            <option value="iPhone 16e" data-i18n="version-iphone-16e" data-type="iPhone">iPhone 15 pro</option>
+                            <option value="iPhone 16e" data-i18n="version-iphone-16e" data-type="iPhone">iPhone 16e</option>
+                            <option value="iPhone 17" data-i18n="version-iphone-17" data-type="iPhone">iPhone 17</option>
+                            <option value="iPad Pro" data-i18n="version-ipad-pro" data-type="iPad">iPad Pro</option>
+                            <option value="iPad Air" data-i18n="version-ipad-air" data-type="iPad">iPad Air</option>
+                            <option value="iPad mini" data-i18n="version-ipad-mini" data-type="iPad">iPad mini</option>
+                            <option value="MacBook Air" data-i18n="version-macbook-air" data-type="MacBook">MacBook Air</option>
+                            <option value="MacBook Pro" data-i18n="version-macbook-pro" data-type="MacBook">MacBook Pro</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="old-assetid" data-i18n="assetid-label">Asset-ID:<span class="required" aria-hidden="true">*</span></label>
+                        <input type="text" id="old-assetid" name="assetid" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="old-serialnumber" data-i18n="serialnumber-label">Seriennummer:</label>
+                        <input type="text" id="old-serialnumber" name="serialnumber">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="old-user" data-i18n="user-label">Nutzer:</label>
+                        <input type="text" id="old-user" name="user">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="old-userid" data-i18n="userid-label">Nutzer-ID:<span class="required" aria-hidden="true">*</span></label>
+                        <input type="text" id="old-userid" name="userid" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="old-userdata" data-i18n="userdata-label">Nutzerdaten:</label>
+                        <textarea id="old-userdata" name="userdata" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="old-swapreason" data-i18n="swap-reason-label">Grund f&Uuml;r Austausch/Defekt:<span class="required" aria-hidden="true">*</span></label>
+                        <textarea id="old-swapreason" name="swapreason" rows="3" required></textarea>
+                    </div>
+
+                    <!-- Kostenstelle moved to Neues Gerät -->
+                </div>
+            </div>
+
+            <!-- NEUES GERÄT -->
+            <div class="form-container new-device">
+                <h2>Neu</h2>
+                <div class="form-group no-spare-checkbox-group" id="noSpareDeviceGroup">
+                    <label class="checkbox-inline" for="ipad-no-spare-checkbox">
+                        <input type="checkbox" id="ipad-no-spare-checkbox" name="ipadNoSpare">
+                        <span data-i18n="ipad-no-spare-label">Kein Leihgerät verfügbar</span>
+                    </label>
+                </div>
+                <div class="form-section">
+                    <!-- Ticketnummer (versteckt mit opacity: 0) -->
+                    <div class="form-group opacity-hidden">
+                        <label for="new-ticket" data-i18n="ticket-label">Ticketnummer:</label>
+                        <input type="text" id="new-ticket" name="ticket">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="new-type" data-i18n="type-label">Gerätetyp:<span class="required" aria-hidden="true">*</span></label>
+                        <select id="new-type" name="type" required>
+                            <option value="" data-i18n="select-default">-- Bitte auswählen --</option>
+                            <option value="iPhone" data-i18n="type-iphone">iPhone</option>
+                            <option value="iPad" data-i18n="type-ipad">iPad</option>
+                            <option value="MacBook" data-i18n="type-macbook">MacBook</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="new-version" data-i18n="version-label">Version:<span class="required" aria-hidden="true">*</span></label>
+                        <select id="new-version" name="version" required>
+                            <option value="" data-i18n="select-default">-- Bitte auswählen --</option>
+                            <option value="iPhone SE" data-i18n="version-iphone-se" data-type="iPhone">iPhone SE</option>
+                            <option value="iPhone 13" data-i18n="version-iphone-13" data-type="iPhone">iPhone 13</option>
+                            <option value="iPhone 15" data-i18n="version-iphone-15" data-type="iPhone">iPhone 15</option>
+                            <option value="iPhone 16e" data-i18n="version-iphone-16e" data-type="iPhone">iPhone 15 pro</option>
+                            <option value="iPhone 16e" data-i18n="version-iphone-16e" data-type="iPhone">iPhone 16e</option>
+                            <option value="iPhone 17" data-i18n="version-iphone-17" data-type="iPhone">iPhone 17</option>
+                            <option value="iPad Pro" data-i18n="version-ipad-pro" data-type="iPad">iPad Pro</option>
+                            <option value="iPad Air" data-i18n="version-ipad-air" data-type="iPad">iPad Air</option>
+                            <option value="iPad mini" data-i18n="version-ipad-mini" data-type="iPad">iPad mini</option>
+                            <option value="MacBook Air" data-i18n="version-macbook-air" data-type="MacBook">MacBook Air</option>
+                            <option value="MacBook Pro" data-i18n="version-macbook-pro" data-type="MacBook">MacBook Pro</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="new-assetid" data-i18n="assetid-label">Asset-ID:<span class="required" aria-hidden="true">*</span></label>
+                        <select id="new-assetid" name="assetid" required>
+                            <option value="" data-i18n="assetid-select-prereq">-- Erst Gerätetyp und Version wählen --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="new-serialnumber" data-i18n="serialnumber-label">Seriennummer:</label>
+                        <input type="text" id="new-serialnumber" name="serialnumber">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="new-user" data-i18n="user-label">Nutzer:</label>
+                        <input type="text" id="new-user" name="user">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="new-userid" data-i18n="userid-label">Nutzer-ID:<span class="required" aria-hidden="true">*</span></label>
+                        <input type="text" id="new-userid" name="userid" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="new-userdata" data-i18n="userdata-label">Nutzerdaten:</label>
+                        <textarea id="new-userdata" name="userdata" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="new-costcenter" data-i18n="costcenter-label">Kostenstelle:<span class="required" aria-hidden="true">*</span></label>
+                        <input type="text" id="new-costcenter" name="costcenter" required>
+                    </div>
+                </div>
+                <div class="ipad-return-message hidden" id="ipadReturnMessage" data-i18n="ipad-return-message">Das iPad wird nach der Reparatur an den Nutzer zurueckgegeben, falls die Aufsicht kein Leihgeraet bereitstellen kann.</div>
+            </div>
+        </div>
+
+        <!-- Gemeinsamer Speicher-Button -->
+        <div class="form-actions global-actions">
+            <button type="button" id="saveDataset" class="button secondary" data-i18n="save-dataset-button">Datensatz speichern</button>
+            <button type="button" id="loadLastDataset" class="button secondary" data-i18n="load-last-dataset-button">Letzten Datensatz laden</button>
+            <button type="button" id="clearFormFields" class="button secondary" data-i18n="clear-form-button">Formular leeren</button>
+            <button type="button" id="viewData" class="button secondary" data-i18n="view-button">Gespeicherte Datensätze anzeigen</button>
+            <button type="button" id="printData" class="button secondary" data-i18n="print-button">Drucken</button>
+            <button type="button" id="exportPdf" class="button secondary" data-i18n="export-pdf-button">Als PDF exportieren</button>
+        </div>
+
+        <!-- Lieferschein Buttons -->
+        <div class="form-actions global-actions">
+            <button type="button" id="printDeliveryNote" class="button secondary" data-i18n="print-delivery-note-button">Lieferschein drucken</button>
+            <button type="button" id="exportDeliveryNotePdf" class="button secondary" data-i18n="export-delivery-note-pdf-button">Lieferschein als PDF exportieren</button>
+        </div>
+
+        <div id="dataModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2 data-i18n="modal-title">Gespeicherte Datensätze</h2>
+                
+                <!-- Search field -->
+                <div class="modal-filter-group modal-search-group">
+                    <label for="datasetSearch" class="modal-filter-label" data-i18n="search-label">Search:</label>
+                    <div class="modal-filter-row">
+                        <div class="search-input-wrap">
+                            <span class="search-icon">
+                                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="10" cy="10" r="6"></circle>
+                                    <line x1="14" y1="14" x2="20" y2="20"></line>
+                                </svg>
+                            </span>
+                            <input type="text" id="datasetSearch" class="modal-search-input" data-i18n-placeholder="search-placeholder" placeholder="Search by ticket number..." 
+                            style="padding-left: 3%;">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Dropdown to select dataset by ticket number -->
+                <div class="modal-filter-group modal-selector-group"><!--added padding-right for scrollbar -->
+                    <label for="datasetSelector" class="modal-filter-label modal-filter-label-nowrap" data-i18n="dataset-selector-label">Select Dataset:</label>
+                    <div class="modal-selector-row">
+                        <select id="datasetSelector">
+                            <option value="">Ticketnumber</option>
+                        </select>
+                        <div id="exportButtonContainer"></div>
+                        <div id="importButtonContainer"></div>
+                        <div id="refreshButtonContainer"></div>
+                    </div>
+                </div>
+                
+                <!-- Hidden file input for import -->
+                <input type="file" id="csvFileInput" class="hidden-file-input" accept=".csv" title="CSV-Datei auswählen" aria-label="CSV-Datei auswählen" />
+                
+                <!-- Display selected dataset expanded at top -->
+                <div id="selectedDatasetDisplay" class="selected-dataset-display hidden"></div>
+                
+                <!-- All datasets in collapsed/foldable view -->
+                <div id="savedData"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="scripts.js"></script>
+    <script>
+        // Register Service Worker for PWA functionality
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(registration => console.log('Service Worker registered'))
+                    .catch(error => console.log('Service Worker registration failed:', error));
+            });
+        }
+    </script>
+</body>
+</html>

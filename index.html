@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n-title="start-page-title">MDM Tool - Start</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="landing-page has-topbar">
+    <div class="topbar">
+        <div class="topbar-left">
+            <button id="menu-toggle" class="toolbar-button" type="button" aria-label="Navigation Menu">☰</button>
+        </div>
+        <div class="topbar-title" data-i18n="app-shell-title">Mobile Device Warranty Management Tool</div>
+        <div class="topbar-right">
+            <div class="language-toggle compact-toggle">
+                <button id="lang-de" class="lang-button active" type="button">DE</button>
+                <button id="lang-en" class="lang-button" type="button">EN</button>
+            </div>
+            <button id="theme-toggle" class="toolbar-button" type="button" aria-label="Theme Toggle">🌙</button>
+            <button id="settings-toggle" class="toolbar-button" type="button" aria-label="Settings Menu">⚙</button>
+        </div>
+    </div>
+    <aside id="nav-drawer" class="nav-drawer" aria-hidden="true">
+        <nav class="drawer-nav">
+            <a href="index.html" data-i18n="nav-home">Startseite</a>
+            <a href="singleswap.html" data-i18n="nav-new-case">Neuen Fall anlegen</a>
+            <a href="overview.html" data-i18n="nav-overview">Übersicht</a>
+            <a href="assetmanagement.html" data-i18n="nav-assets">Assets verwalten</a>
+        </nav>
+    </aside>
+    <div id="menu-backdrop" class="menu-backdrop hidden"></div>
+    <div id="settings-menu" class="settings-menu hidden">
+        <span data-i18n="settings-placeholder">Einstellungsmenü folgt.</span>
+    </div>
+
+    <main class="menu-panel nav-shell">
+
+        <div class="button-row">
+            <a class="menu-button btn-case" href="singleswap.html" data-i18n="new-case-button">Neuen Fall anlegen</a>
+            <a class="menu-button btn-overview" href="overview.html" data-i18n="overview-button">Übersicht</a>
+            <a class="menu-button btn-assets" href="assetmanagement.html" data-i18n="assets-button">Assets verwalten</a>
+        </div>
+    </main>
+    <script src="navigation.js"></script>
+</body>
+</html>

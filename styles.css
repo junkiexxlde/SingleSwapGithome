@@ -1,0 +1,2494 @@
+:root {
+    --primary-color: rgb(52 73 99);
+    --secondary-color: #4CAF50;
+    --secondary-dark: #2E7D32;
+    --btn-save: #1d8f6a;
+    --btn-save-hover: #166f53;
+    --btn-load: #2e6fb4;
+    --btn-load-hover: #245b93;
+    --btn-clear: #b44949;
+    --btn-clear-hover: #943737;
+    --btn-view: #5a4db2;
+    --btn-view-hover: #463b8b;
+    --btn-print: #3f5c73;
+    --btn-print-hover: #31495d;
+    --btn-pdf: #c56b2d;
+    --btn-pdf-hover: #9f5522;
+    --btn-delivery-print: #2d7355;
+    --btn-delivery-print-hover: #1f5240;
+    --btn-delivery-pdf: #6e3fa3;
+    --btn-delivery-pdf-hover: #552f80;
+    --btn-modal-export: #1d8f6a;
+    --btn-modal-export-hover: #166f53;
+    --btn-modal-import: #5a4db2;
+    --btn-modal-import-hover: #463b8b;
+    --btn-modal-refresh: #6a7280;
+    --btn-modal-refresh-hover: #555d6a;
+    --background-color: #e8eaed;
+    --text-color: #333;
+    --card-bg: #fff;
+    --border-color: #ddd;
+    --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    --container-max-width: 1100px;
+}
+
+[data-theme="dark"] {
+    --primary-color: rgb(52 73 99);
+    --secondary-color: #4CAF50;
+    --secondary-dark: #2E7D32;
+    --btn-save: #229f77;
+    --btn-save-hover: #1a7d5e;
+    --btn-load: #3a80cd;
+    --btn-load-hover: #2e68a6;
+    --btn-clear: #cb5a5a;
+    --btn-clear-hover: #a14444;
+    --btn-view: #6d5ed2;
+    --btn-view-hover: #564ab0;
+    --btn-print: #4f718b;
+    --btn-print-hover: #3d5a70;
+    --btn-pdf: #d57a39;
+    --btn-pdf-hover: #ae632f;
+    --btn-delivery-print: #369968;
+    --btn-delivery-print-hover: #287550;
+    --btn-delivery-pdf: #845ec2;
+    --btn-delivery-pdf-hover: #673d9a;
+    --btn-modal-export: #229f77;
+    --btn-modal-export-hover: #1a7d5e;
+    --btn-modal-import: #6d5ed2;
+    --btn-modal-import-hover: #564ab0;
+    --btn-modal-refresh: #7d8797;
+    --btn-modal-refresh-hover: #656f7d;
+    --background-color: #121212;
+    --text-color: #f0f0f0;
+    --card-bg: #1e1e1e;
+    --border-color: #444;
+    --shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 20px;
+    color: var(--text-color);
+    background-color: var(--background-color);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+body.has-topbar {
+    padding-top: 88px;
+}
+
+/* Landing pages: suppress scrollbar unless content actually overflows */
+body.landing-page {
+    height: 100vh;
+    box-sizing: border-box;
+    overflow-y: auto;
+    scrollbar-width: none;       /* Firefox */
+    -ms-overflow-style: none;    /* IE/Edge */
+}
+
+body.landing-page::-webkit-scrollbar {
+    display: none;               /* Chrome/Safari */
+}
+
+.container {
+    max-width: var(--container-max-width);
+    margin: 0 auto;
+    padding: 25px;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+}
+
+.topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 18px;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.topbar-left,
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.topbar-title {
+    flex: 1;
+    color: var(--primary-color);
+    font-size: 1rem;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: 0.01em;
+}
+
+.toolbar-button {
+    width: 42px;
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--card-bg);
+    color: var(--primary-color);
+    cursor: pointer;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.toolbar-button:hover,
+.toolbar-button:focus-visible {
+    background: rgba(52, 73, 99, 0.08);
+    outline: none;
+}
+
+.compact-toggle {
+    gap: 8px;
+}
+
+.nav-drawer {
+    position: fixed;
+    top: 67px;
+    left: 0;
+    bottom: 0;
+    width: min(280px, 84vw);
+    padding: 18px;
+    background: var(--card-bg);
+    border-right: 1px solid var(--border-color);
+    box-shadow: 12px 0 28px rgba(0, 0, 0, 0.12);
+    transform: translateX(-110%);
+    transition: transform 0.22s ease;
+    z-index: 1090;
+}
+
+.nav-drawer.open {
+    transform: translateX(0);
+}
+
+.drawer-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.drawer-nav a {
+    padding: 12px 14px;
+    border-radius: 10px;
+    text-decoration: none;
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+.drawer-nav a:hover,
+.drawer-nav a:focus-visible {
+    background: rgba(52, 73, 99, 0.08);
+    outline: none;
+}
+
+.menu-backdrop {
+    position: fixed;
+    inset: 67px 0 0 0;
+    background: rgba(0, 0, 0, 0.28);
+    z-index: 1080;
+}
+
+.settings-menu {
+    position: fixed;
+    top: 74px;
+    right: 18px;
+    z-index: 1095;
+    min-width: 220px;
+    padding: 14px 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.14);
+    color: var(--text-color);
+}
+
+.asset-settings-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: min(420px, 86vw);
+}
+
+.asset-settings-panel h3 {
+    margin: 0 0 0.2rem;
+    color: var(--primary-color);
+}
+
+.asset-settings-panel label {
+    font-weight: 600;
+}
+
+.asset-settings-input {
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 8px 10px;
+    background: var(--card-bg);
+    color: var(--text-color);
+}
+
+.asset-defaults-table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-top: 4px;
+}
+
+.asset-defaults-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.asset-defaults-table th,
+.asset-defaults-table td {
+    font-size: 0.84rem;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+}
+
+.asset-defaults-table th {
+    color: var(--primary-color);
+    background: rgba(52, 73, 99, 0.08);
+}
+
+.asset-defaults-table tr:last-child td {
+    border-bottom: none;
+}
+
+.page-heading {
+    margin-bottom: 24px;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+h1 {
+    margin: 0;
+    color: var(--primary-color);
+    font-size: 1.6rem;
+    line-height: 1.2;
+    flex: 1;
+}
+
+h2 {
+    margin: 0 0 15px 0;
+    color: var(--primary-color);
+    font-size: 1.3rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 8px;
+}
+
+.language-toggle {
+    display: flex;
+    gap: 5px;
+}
+
+.lang-button {
+    padding: 5px 10px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    color: var(--text-color);
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.lang-button.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.icon-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 24px;
+    color: var(--primary-color);
+}
+
+.forms-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.form-container {
+    flex: 1;
+    min-width: 45%;
+    padding: 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--card-bg);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/*.form-group {
+    margin-bottom: 15px;
+}*/
+
+.hidden {
+    display: none !important;
+}
+
+.checkbox-inline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.checkbox-inline input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    min-height: 18px;
+    margin: 0;
+}
+
+/* Offset old-device fields to stay level with new-device, which has the
+   no-spare checkbox group (≈24px content + 15px margin-bottom = 39px) above
+   its form-section. */
+.form-container.old-device .form-section {
+    margin-top: 39px;
+}
+
+.new-device.ipad-no-replacement .form-section {
+    display: none;
+}
+
+.form-container.new-device .ipad-return-message {
+    border: 1px dashed var(--border-color);
+    background: rgba(52, 73, 99, 0.08);
+    padding: 12px;
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+/* Versteckte Formularelemente mit opacity: 0 */
+.opacity-hidden {
+    opacity: 0;
+    border: none;
+}
+
+.opacity-hidden label,
+.opacity-hidden input,
+.opacity-hidden select,
+.opacity-hidden textarea {
+    opacity: 0;
+}
+
+/* Navigation pages (index, overview, assetmanagement) */
+.landing-page {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    color: var(--text-color);
+    background:
+        radial-gradient(circle at 20% 20%, rgba(47, 125, 106, 0.18), transparent 40%),
+        radial-gradient(circle at 80% 75%, rgba(154, 95, 47, 0.16), transparent 44%),
+        linear-gradient(155deg, #e6efe4, #f4efe3);
+    padding: 1rem;
+}
+
+/* Space from topbar to first content element on all landing pages */
+.landing-page > .menu-panel,
+.landing-page > .subpage-layout {
+    margin-top: 10vh;
+}
+
+.subpage-layout {
+    width: min(92vw, 760px);
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0 1rem;
+}
+
+.subpage-heading {
+    margin: 0 0 1.4rem 0.2rem;
+    font-size: clamp(1.4rem, 1.2rem + 1.1vw, 2rem);
+    color: var(--primary-color);
+    letter-spacing: 0.01em;
+}
+
+[data-theme="dark"] .landing-page {
+    background:
+        radial-gradient(circle at 15% 22%, rgba(59, 149, 125, 0.18), transparent 40%),
+        radial-gradient(circle at 82% 75%, rgba(190, 122, 74, 0.2), transparent 44%),
+        linear-gradient(155deg, #1b242b, #171a1e);
+}
+
+.nav-shell {
+    width: min(92vw, 760px);
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    box-shadow: 0 16px 38px rgba(26, 38, 48, 0.16);
+    padding: 1.8rem;
+    animation: liftIn 420ms ease-out;
+}
+
+.nav-header {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1.3rem;
+}
+
+.menu-panel h1,
+.card h1 {
+    margin: 0;
+    font-size: clamp(1.4rem, 1.2rem + 1.1vw, 2.1rem);
+    text-align: center;
+    letter-spacing: 0.01em;
+    color: var(--primary-color);
+}
+
+.menu-panel p,
+.card p {
+    margin: 0.7rem 0 1.4rem;
+    text-align: center;
+    color: var(--text-color);
+}
+
+.button-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    justify-content: center;
+    align-items: center;
+}
+
+.menu-button {
+    width: min(100%, 360px);
+    border: 0;
+    border-radius: 12px;
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 0.95rem 1.3rem;
+    text-decoration: none;
+    text-align: center;
+    transition: transform 180ms ease, filter 180ms ease;
+}
+
+.menu-button:hover,
+.menu-button:focus-visible {
+    transform: translateY(-2px);
+    filter: brightness(1.03);
+    outline: none;
+}
+
+.btn-case {
+    background: #2f7d6a;
+}
+
+.btn-case:hover,
+.btn-case:focus-visible {
+    background: #266b5a;
+}
+
+.btn-overview {
+    background: #2d5f9e;
+}
+
+.btn-overview:hover,
+.btn-overview:focus-visible {
+    background: #244d81;
+}
+
+.btn-assets {
+    background: #9a5f2f;
+}
+
+.btn-assets:hover,
+.btn-assets:focus-visible {
+    background: #7c4e26;
+}
+
+.card {
+    width: min(92vw, 680px);
+}
+
+.back-link {
+    display: inline-block;
+    margin-top: 1.2rem;
+    text-decoration: none;
+    color: #fff;
+    padding: 0.7rem 1rem;
+    border-radius: 10px;
+    font-weight: 700;
+}
+
+.back-overview {
+    background: #2d5f9e;
+}
+
+.back-assets {
+    background: #9a5f2f;
+}
+
+.back-link:hover,
+.back-link:focus-visible {
+    filter: brightness(1.06);
+    outline: none;
+}
+
+.asset-tools {
+    margin: 0.6rem 0 1.2rem;
+}
+
+.asset-tools h2 {
+    margin-bottom: 0.9rem;
+}
+
+.asset-actions-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(260px, 1fr));
+    gap: 14px;
+    margin-bottom: 1rem;
+}
+
+.asset-action-card {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: var(--card-bg);
+}
+
+.asset-action-card h3 {
+    margin: 0;
+    color: var(--primary-color);
+    font-size: 1.02rem;
+}
+
+.hover-hint-title {
+    cursor: help;
+}
+
+.asset-action-card p {
+    margin: 0;
+    text-align: left;
+    font-size: 0.94rem;
+}
+
+.asset-action-card select {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 8px 10px;
+}
+
+.asset-status {
+    min-height: 22px;
+    margin-bottom: 0.8rem;
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: rgba(52, 73, 99, 0.08);
+    font-size: 0.92rem;
+}
+
+.asset-validation-report {
+    margin-bottom: 0.9rem;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 10px;
+    background: var(--card-bg);
+}
+
+.asset-validation-report h3 {
+    margin: 0 0 0.55rem;
+    color: var(--primary-color);
+    font-size: 1rem;
+}
+
+.asset-validation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 0.45rem;
+}
+
+.asset-validation-header h3 {
+    margin: 0;
+}
+
+.asset-validation-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.asset-validation-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 540px;
+}
+
+.asset-validation-table th,
+.asset-validation-table td {
+    border-bottom: 1px solid var(--border-color);
+    padding: 7px 8px;
+    text-align: left;
+    font-size: 0.88rem;
+    vertical-align: top;
+}
+
+.asset-validation-table th {
+    background: rgba(52, 73, 99, 0.08);
+    color: var(--primary-color);
+}
+
+.asset-validation-table tr:last-child td {
+    border-bottom: none;
+}
+
+.asset-report-pill {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.asset-report-pill.imported {
+    background: rgba(29, 143, 106, 0.18);
+    color: #15674d;
+}
+
+.asset-report-pill.duplicate {
+    background: rgba(180, 133, 49, 0.2);
+    color: #7b5a1d;
+}
+
+.asset-report-pill.invalid {
+    background: rgba(180, 73, 73, 0.2);
+    color: #7d2f2f;
+}
+
+.asset-table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+}
+
+.asset-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 640px;
+}
+
+.asset-page .subpage-layout {
+    width: min(97vw, 1220px);
+}
+
+.asset-page .nav-shell {
+    width: 100%;
+}
+
+.asset-page .asset-table {
+    min-width: 760px;
+}
+
+.asset-table th,
+.asset-table td {
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+    padding: 8px 10px;
+    font-size: 0.92rem;
+}
+
+.asset-table th {
+    background: rgba(52, 73, 99, 0.08);
+    color: var(--primary-color);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.asset-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+@media (max-width: 640px) {
+    .nav-shell {
+        padding: 1.3rem 1rem;
+    }
+
+    .menu-button {
+        width: 100%;
+    }
+
+    .asset-actions-row {
+        grid-template-columns: 1fr;
+    }
+
+    .asset-validation-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .asset-page .asset-table {
+        min-width: 640px;
+    }
+}
+
+@keyframes liftIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+/* Visible marker for required fields */
+.required {
+    color: #d9534f;
+    margin-left: 6px;
+    font-weight: 700;
+}
+
+input[type="text"],
+select,
+textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 15px;
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    box-sizing: border-box;
+    min-height: 44px;
+}
+
+select {
+    -moz-appearance: none;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3e%3cpath d='M7 10l5 5 5-5'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 1em;
+    padding-right: 30px;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.global-actions {
+    justify-content: flex-start;
+    margin: 20px 0;
+}
+
+.button {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.secondary {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.secondary:hover {
+    background-color: var(--secondary-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.secondary:active {
+    transform: scale(0.98);
+}
+
+/* Main action buttons use distinct, semantic colors for faster recognition. */
+.global-actions .button {
+    color: #fff;
+}
+
+#saveDataset { background-color: var(--btn-save); }
+#saveDataset:hover { background-color: var(--btn-save-hover); }
+
+#loadLastDataset { background-color: var(--btn-load); }
+#loadLastDataset:hover { background-color: var(--btn-load-hover); }
+
+#clearFormFields { background-color: var(--btn-clear); }
+#clearFormFields:hover { background-color: var(--btn-clear-hover); }
+
+#viewData { background-color: var(--btn-view); }
+#viewData:hover { background-color: var(--btn-view-hover); }
+
+#printData { background-color: var(--btn-print); }
+#printData:hover { background-color: var(--btn-print-hover); }
+
+#exportPdf { background-color: var(--btn-pdf); }
+#exportPdf:hover { background-color: var(--btn-pdf-hover); }
+
+#printDeliveryNote { background-color: var(--btn-delivery-print); }
+#printDeliveryNote:hover { background-color: var(--btn-delivery-print-hover); }
+
+#exportDeliveryNotePdf { background-color: var(--btn-delivery-pdf); }
+#exportDeliveryNotePdf:hover { background-color: var(--btn-delivery-pdf-hover); }
+
+/* Modal action palette aligned with semantic app actions. */
+.modal-action-button {
+    white-space: nowrap;
+    padding: 10px 16px;
+}
+
+#exportData {
+    background-color: var(--btn-modal-export);
+}
+
+#exportData:hover {
+    background-color: var(--btn-modal-export-hover);
+}
+
+#importData {
+    background-color: var(--btn-modal-import);
+}
+
+#importData:hover {
+    background-color: var(--btn-modal-import-hover);
+}
+
+#refreshData {
+    background-color: var(--btn-modal-refresh);
+}
+
+#refreshData:hover {
+    background-color: var(--btn-modal-refresh-hover);
+}
+
+/* Modal-Stile */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background-color: var(--card-bg);
+    margin: 3% auto;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    width: 95%;
+    max-width: 1300px;
+    max-height: 90vh;
+    overflow-y: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+#savedData {
+    margin-top: 0;
+    flex: 1;
+    overflow-y: auto;
+    max-height: calc(90vh - 100px);
+    padding-right: 10px;
+}
+
+.close {
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    color: var(--text-color);
+}
+
+/* Übersichtliche Gerätekarten */
+.dataset-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 0;
+    box-shadow: none;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    display: flex;
+    flex-direction: column;
+}
+
+.dataset-card .dataset-header {
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+    font-size: 1rem;
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 8px;
+}
+
+.dataset-card .device-section {
+    margin-bottom: 15px;
+}
+
+.dataset-card .device-section h3 {
+    font-size: 1rem;
+    color: var(--primary-color);
+    margin-bottom: 8px;
+}
+
+/* Make dataset cards visually match the input form layout */
+.dataset-card .form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Container for each complete dataset (saved timestamp + both old/new devices) */
+.dataset-wrapper {
+    background: #fafafa;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    transition: box-shadow 0.2s ease;
+}
+
+[data-theme="dark"] .dataset-wrapper {
+    background: #292a2b;
+}
+
+.dataset-wrapper:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+/* Container for the two device cards per dataset */
+.dataset-pair {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+/* Wide screens: place old/new cards side-by-side and avoid inner scrolling */
+@media (min-width: 992px) {
+    .dataset-pair {
+        flex-direction: row;
+        gap: 16px;
+        align-items: stretch;
+    }
+
+    .dataset-card {
+        padding: 12px;
+        flex: 1 1 0;
+        min-width: 0;
+        max-height: none; /* allow full height inside modal */
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* visual separator between side-by-side cards */
+    .dataset-card + .dataset-card {
+        border-left: 2px solid var(--border-color);
+        padding-left: 14px;
+    }
+
+    /* remove inner scrolling for saved data area on wide screens */
+    #savedData {
+        max-height: none;
+        overflow: visible;
+    }
+
+    /* let modal content scroll as a whole if needed, but avoid nested scrollbars */
+    .modal-content {
+        max-height: 95vh;
+        overflow-y: auto;
+    }
+}
+
+/* Print-specific styling to layout cards side-by-side and provide signature area */
+@page {
+    size: A4;
+    margin: 0.4cm;
+}
+
+@media print {
+    /* ensure the modal data area prints the pair side-by-side */
+    .dataset-pair { flex-direction: row !important; gap: 10px !important; }
+    .dataset-card { padding: 7px !important; box-shadow: none !important; border: 1px solid #ddd !important; font-size: 0.74rem !important; line-height: 1.2 !important; }
+    .dataset-card + .dataset-card { border-left: 1px solid rgba(0,0,0,0.06) !important; padding-left: 10px !important; }
+    .dataset-wrapper { page-break-inside: avoid; margin-bottom: 10px; }
+    .dataset-footer { display: none; } /* Hide print button in print view */
+    .dataset-print-button { display: none; } /* Hide print symbol */
+    .print-icon-button { display: none; } /* Hide print icon button */
+    /* leave a few rows of space below the cards before signatures */
+    .print-checkboxes { margin: 10px 0; padding: 7px 0; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; }
+    .checkbox-row { margin: 5px 0; }
+    .checkbox-row input[type="checkbox"] { margin-right: 4px; }
+    .checkbox-row label { display: inline; font-size: 0.7rem; }
+    .print-signature-area { margin-top: 14px; }
+    .print-signatures { display: flex; gap: 20px; justify-content: space-between; }
+    .print-signatures-vertical { display:flex; flex-direction:column; gap:8px; }
+    .signature-block { flex: 1; border-top: 1px solid transparent; padding-top: 2px; }
+    .signature-block .sig-title { font-weight: 600; margin-bottom: 2px; font-size: 0.7rem; }
+    .signature-block .sig-note { margin-bottom: 2px; font-style: italic; font-size: 0.65rem; }
+    .signature-block .sig-row { margin: 12px 0; }
+    .sig-row { display:flex; gap:16px; align-items:flex-end; }
+    .sig-label { min-width: 110px; font-weight:600; font-size: 0.72rem; }
+    .sig-line { flex:0 0 50%; max-width: 50%; border-bottom: 1px solid #b8c0c8; height: 20px; }
+    .print-generated-at { display: none; } /* Hide Gedruckt am date */
+    .delivery-note-title { text-align: center; color: #344963; font-size: 1.08rem; font-weight: 700; margin-bottom: 9px; border-bottom: 2px solid #344963; padding-bottom: 6px; }
+    body { padding: 4px !important; margin: 0 !important; }
+    .dataset-card p { margin: 2px 0; }
+    .dataset-card .form-group { margin: 2px 0; }
+    .dataset-card .form-group label { color: #444; font-size: 0.75rem; }
+    .dataset-card .value { color: #1a1a1a; font-size: 0.75rem; }
+    .saved-at { color: var(--secondary-color); margin-top: 3px; font-size: 0.7rem; }
+    /* ensure the printed content uses full width and avoids nested scrollbars */
+    .modal-content, #savedData { overflow: visible !important; max-height: none !important; }
+    .container { padding: 0 !important; margin: 0 !important; }
+    header { display: none; }
+}
+
+/* PDF / print-preview helpers to ensure export matches print view */
+.pdf-export, .print-preview {
+    width: 100%;
+}
+.pdf-export .dataset-pair, .print-preview .dataset-pair {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    align-items: stretch;
+}
+.pdf-export .dataset-card, .print-preview .dataset-card {
+    flex: 1 1 0;
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: 1px solid #cac2c2 !important;
+    box-shadow: none !important;
+    padding: 6px !important;
+    font-size: 0.75rem !important;
+    line-height: 1.15 !important;
+}
+
+/* Tabular layout for print/PDF cards */
+.pdf-export .dataset-card .form-section,
+.print-preview .dataset-card .form-section {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    gap: 0 !important;
+}
+
+.pdf-export .dataset-card .form-group,
+.print-preview .dataset-card .form-group {
+    display: table-row;
+    margin: 0 !important;
+}
+
+.pdf-export .dataset-card .form-group label,
+.print-preview .dataset-card .form-group label,
+.pdf-export .dataset-card .form-group .value,
+.print-preview .dataset-card .form-group .value {
+    display: table-cell;
+    vertical-align: top;
+    padding: 6px 10px;
+    border-bottom: 1px solid #e2e6eb;
+    font-size: 0.71rem !important;
+    line-height: 1.32;
+}
+
+.pdf-export .dataset-card .form-group label,
+.print-preview .dataset-card .form-group label {
+    width: 42%;
+    font-weight: 600;
+    color: #2f3944 !important;
+}
+
+.pdf-export .dataset-card .form-group .value,
+.print-preview .dataset-card .form-group .value {
+    width: 58%;
+    text-align: left;
+    max-width: none;
+    color: #1b1f24 !important;
+}
+
+.pdf-export .dataset-card .form-group:last-child label,
+.print-preview .dataset-card .form-group:last-child label,
+.pdf-export .dataset-card .form-group:last-child .value,
+.print-preview .dataset-card .form-group:last-child .value {
+    border-bottom: none;
+}
+
+.pdf-export .dataset-card + .dataset-card, .print-preview .dataset-card + .dataset-card {
+    border-left: 1px solid rgba(0,0,0,0.06) !important;
+    padding-left: 10px !important;
+}
+.pdf-export body, .print-preview body {
+    background: #ffffff !important;
+    padding: 4px !important;
+    margin: 0 !important;
+}
+.pdf-export .dataset-card p, .print-preview .dataset-card p {
+    margin: 2px 0;
+}
+.pdf-export .dataset-card .form-group, .print-preview .dataset-card .form-group {
+    margin: 2px 0;
+}
+.pdf-export .dataset-print-button, .print-preview .dataset-print-button,
+.pdf-export .print-icon-button, .print-preview .print-icon-button,
+.pdf-export .pdf-export-icon-button, .print-preview .pdf-export-icon-button,
+.pdf-export .delete-icon-button, .print-preview .delete-icon-button {
+    display: none !important;
+}
+
+/* Force printed card labels to be dark for readability */
+.pdf-export .dataset-card .form-group label, .print-preview .dataset-card .form-group label {
+    color: #222 !important;
+    font-size: 0.75rem;
+}
+
+/* Keep saved-at styled in PDF export (use secondary color) */
+.pdf-export .saved-at,
+.print-preview .saved-at {
+    color: #000 !important;
+}
+.pdf-export .print-generated-at,
+.print-preview .print-generated-at {
+    display: none !important;
+}
+
+.pdf-export .print-checkboxes,
+.print-preview .print-checkboxes {
+    margin: 12px 0;
+    padding: 9px 0;
+}
+
+.pdf-export .print-signature-area,
+.print-preview .print-signature-area {
+    margin-top: 14px;
+}
+
+.pdf-export .sig-row,
+.print-preview .sig-row {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+    margin: 12px 0;
+}
+
+.pdf-export .sig-label,
+.print-preview .sig-label {
+    min-width: 110px;
+    font-size: 0.72rem;
+}
+
+.pdf-export .sig-line,
+.print-preview .sig-line {
+    flex: 0 0 50%;
+    max-width: 50%;
+    height: 20px;
+    border-bottom: 1px solid #b8c0c8;
+}
+
+.pdf-export .sig-title,
+.print-preview .sig-title {
+    font-size: 0.8rem;
+}
+
+.delivery-note-title {
+    text-align: center;
+    color: var(--primary-color);
+    font-size: 1.08rem;
+    font-weight: 700;
+    margin-bottom: 9px;
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 6px;
+}
+
+.swap-protocol-title {
+    text-align: center;
+    color: var(--primary-color);
+    font-size: 1.08rem;
+    font-weight: 700;
+    margin-bottom: 9px;
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 6px;
+}
+
+.pdf-export .delivery-note-title,
+.print-preview .delivery-note-title {
+    color: #344963 !important;
+    border-bottom-color: #344963 !important;
+}
+
+.pdf-export .swap-protocol-title,
+.print-preview .swap-protocol-title {
+    color: #344963 !important;
+    border-bottom-color: #344963 !important;
+}
+
+.delivery-note-copy {
+    margin-bottom: 12px;
+}
+
+@media print {
+    .delivery-note-copy {
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
+    .delivery-note-copy + .delivery-note-copy {
+        page-break-before: always;
+        break-before: page;
+        margin-top: 0;
+    }
+}
+
+/* Ensure signature location/date and related note/title are black on white in PDF/print preview */
+.pdf-export .sig-label,
+.print-preview .sig-label,
+.pdf-export .sig-title,
+.print-preview .sig-title,
+.pdf-export .sig-note,
+.print-preview .sig-note {
+    color: #000 !important;
+}
+
+/* position close button to top-right inside modal */
+.modal-content { position: relative; }
+.close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    float: none;
+}
+
+.dataset-card .form-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.dataset-card .form-group label {
+    font-weight: 600;
+    min-width: 140px;
+    color: var(--text-color);
+}
+
+.dataset-card .form-group .value {
+    text-align: right;
+    max-width: 60%;
+    word-break: break-word;
+}
+
+/* PDF/export visual tweaks */
+.print-checkboxes { margin: 12px 0; padding: 9px 0; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; }
+.checkbox-row { margin: 5px 0; }
+.checkbox-row input[type="checkbox"] { margin-right: 8px; }
+.checkbox-row label { display: inline; }
+.print-signature-area { margin-top: 14px; }
+.sig-title { font-size: 0.98rem; color: #222; }
+.sig-note { color: #555; }
+.sig-line { height: 20px; border-bottom: 1px solid #b8c0c8; }
+
+/* PDF button style */
+#exportPdf {
+    background-color: #2d7a9a;
+    color: white;
+}
+
+#exportPdf:hover { background-color: #246076; transform: translateY(-2px); }
+
+#exportPdf:active { transform: scale(0.98); }
+
+#refreshData {
+    background-color: #8badbe;
+    color: white;
+}
+
+#refreshData:hover {
+    background-color: #7a9bad;
+    transform: translateY(-2px);
+}
+
+#refreshData:active {
+    transform: scale(0.98);
+}
+
+/* Print button in dataset cards */
+.dataset-print-button {
+    text-align: center;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color);
+}
+
+.print-icon-button {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.2s;
+    color: var(--text-color);
+}
+
+.print-icon-button:hover {
+    background-color: var(--secondary-color);
+    color: white;
+    border-color: var(--secondary-color);
+    transform: scale(1.1);
+}
+
+.print-icon-button:active {
+    transform: scale(0.95);
+}
+
+.pdf-export-icon-button {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.2s;
+    color: var(--text-color);
+}
+
+.pdf-export-icon-button:hover {
+    background-color: var(--secondary-color);
+    color: white;
+    border-color: var(--secondary-color);
+    transform: scale(1.1);
+}
+
+.pdf-export-icon-button:active {
+    transform: scale(0.95);
+}
+
+.delete-icon-button {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.2s;
+    color: var(--text-color);
+}
+
+.delete-icon-button:hover {
+    background-color: #dc3545;
+    color: white;
+    border-color: #dc3545;
+    transform: scale(1.1);
+}
+
+.delete-icon-button:active {
+    transform: scale(0.95);
+}
+
+/* Dataset footer: flex layout for saved-at text and print button */
+.dataset-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-top: 1px solid var(--border-color);
+    margin-top: 12px;
+}
+
+.dataset-card p {
+    margin: 4px 0;
+    display: flex;
+    justify-content: space-between;
+}
+
+.dataset-card p .label {
+    font-weight: 600;
+    min-width: 120px;
+    color: var(--text-color);
+}
+
+.dataset-card p .value {
+    text-align: right;
+    max-width: 60%;
+    word-break: break-word;
+}
+
+.saved-at {
+    font-size: 0.95rem;
+    color: var(--secondary-color);
+    font-style: italic;
+    margin-top: 8px;
+    display: block;
+}
+
+@media (max-width: 992px) {
+    .forms-row {
+        flex-direction: column;
+    }
+    .form-container {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    body.has-topbar {
+        padding-top: 82px;
+    }
+
+    .container {
+        padding: 15px;
+    }
+    h1 {
+        font-size: 1.3rem;
+    }
+    .form-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .button {
+        width: 100%;
+    }
+    .language-toggle {
+        order: 1;
+        width: 100%;
+        justify-content: center;
+        margin-top: 10px;
+    }
+
+    .topbar {
+        padding: 10px 12px;
+        gap: 10px;
+    }
+
+    .topbar-title {
+        font-size: 0.92rem;
+    }
+
+    .topbar-right {
+        gap: 8px;
+    }
+
+    .compact-toggle {
+        width: auto;
+        margin-top: 0;
+    }
+}
+
+/* Small devices (tablets and smaller) */
+@media (max-width: 600px) {
+    body {
+        padding: 10px;
+    }
+
+    body.has-topbar {
+        padding-top: 78px;
+    }
+    
+    .container {
+        padding: 12px;
+        border-radius: 4px;
+    }
+    
+    header {
+        flex-direction: column;
+        margin-bottom: 15px;
+        gap: 10px;
+    }
+
+    .topbar {
+        padding: 8px 10px;
+    }
+
+    .topbar-title {
+        font-size: 0.84rem;
+        text-align: left;
+    }
+
+    .toolbar-button {
+        width: 38px;
+        height: 38px;
+        font-size: 1.05rem;
+    }
+
+    .topbar-right {
+        gap: 6px;
+    }
+
+    .compact-toggle .lang-button {
+        padding: 5px 8px;
+    }
+
+    .nav-drawer {
+        top: 60px;
+    }
+
+    .menu-backdrop {
+        inset: 60px 0 0 0;
+    }
+
+    .settings-menu {
+        top: 66px;
+        right: 10px;
+        min-width: 180px;
+    }
+    
+    h1 {
+        font-size: 1.1rem;
+        text-align: center;
+        width: 100%;
+    }
+    
+    h2 {
+        font-size: 1.05rem;
+        margin: 0 0 10px 0;
+        padding-bottom: 6px;
+    }
+    
+    .language-toggle {
+        justify-content: center;
+        width: auto;
+    }
+    
+    .icon-button {
+        font-size: 20px;
+    }
+    
+    .forms-row {
+        gap: 0;
+    }
+    
+    .form-container {
+        margin-bottom: 15px;
+    }
+    
+    .form-section {
+        padding: 10px 0;
+    }
+    
+    .form-group {
+        margin-bottom: 10px;
+    }
+    
+    label {
+        font-size: 0.9rem;
+    }
+    
+    input[type="text"],
+    input[type="email"],
+    input[type="number"],
+    textarea,
+    select {
+        width: 100%;
+        padding: 10px;
+        font-size: 16px;
+        min-height: 44px;
+    }
+    
+    textarea {
+        min-height: 80px;
+    }
+    
+    .button {
+        width: 100%;
+        padding: 12px 15px;
+        font-size: 14px;
+        min-height: 44px;
+        border-radius: 4px;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+        gap: 8px;
+        padding: 10px 0;
+    }
+    
+    .modal-content {
+        width: 95%;
+        max-width: 100%;
+        margin: 10% auto;
+        padding: 12px;
+        max-height: 85vh;
+    }
+    
+    .modal {
+        position: fixed;
+        z-index: 999;
+    }
+    
+    #datasetSelector {
+        width: 100%;
+        height: 44px;
+        font-size: 14px;
+    }
+}
+
+/* Very small devices (smartphones) */
+@media (max-width: 480px) {
+    body {
+        padding: 8px;
+    }
+    
+    .container {
+        padding: 10px;
+        max-width: 100%;
+    }
+    
+    header {
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+    
+    h1 {
+        font-size: 1rem;
+        word-wrap: break-word;
+    }
+    
+    h2 {
+        font-size: 0.95rem;
+        margin: 0 0 8px 0;
+    }
+    
+    .form-group {
+        margin-bottom: 8px;
+    }
+    
+    label {
+        font-size: 0.85rem;
+        display: block;
+        margin-bottom: 4px;
+    }
+    
+    input[type="text"],
+    input[type="email"],
+    input[type="number"],
+    textarea,
+    select {
+        width: 100%;
+        padding: 8px;
+        font-size: 16px;
+        min-height: 42px;
+        box-sizing: border-box;
+    }
+    
+    textarea {
+        min-height: 70px;
+        font-size: 14px;
+    }
+    
+    .button {
+        width: 100%;
+        padding: 10px 12px;
+        font-size: 13px;
+        min-height: 42px;
+    }
+    
+    .form-actions {
+        gap: 6px;
+    }
+    
+    .modal-content {
+        width: 98%;
+        margin: 20% auto;
+        padding: 10px;
+        max-height: 80vh;
+        border-radius: 2px;
+    }
+    
+    .close {
+        font-size: 24px;
+        padding: 5px;
+    }
+    
+    .dataset-card {
+        padding: 10px;
+        margin-bottom: 10px;
+        font-size: 0.85rem;
+    }
+    
+    .dataset-header {
+        font-size: 0.95rem;
+        padding-bottom: 4px;
+    }
+    
+    .print-icon-button,
+    .delete-icon-button,
+    .pdf-export-icon-button {
+        padding: 5px 8px;
+        font-size: 16px;
+    }
+    
+    .dataset-footer {
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+    
+    .saved-at {
+        font-size: 0.8rem;
+        margin: 0;
+        flex-basis: 100%;
+    }
+}
+
+/* Druck-Button */
+#printData {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+#printData:hover {
+    background-color: var(--secondary-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+#printData:active {
+    transform: scale(0.98);
+}
+
+/* Export-Button */
+#exportData {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+#exportData:hover {
+    background-color: var(--secondary-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+#exportData:active {
+    transform: scale(0.98);
+}
+
+/* Export-Button mit neuer Farbgebung */
+#exportData {
+    background-color: rgb(52 73 99);
+    color: white;
+}
+
+#exportData:hover {
+    background-color: rgb(36 51 69);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+#exportData:active {
+    transform: scale(0.98);
+}
+
+/* Übersichtliche Gerätekarten */
+.dataset-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: var(--shadow);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.dataset-card .dataset-header {
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 8px;
+    font-size: 1.05rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 5px;
+}
+
+.dataset-card .device-section {
+    margin-bottom: 15px;
+}
+
+.dataset-card .device-section h3 {
+    font-size: 1rem;
+    color: var(--primary-color);
+    margin-bottom: 8px;
+}
+
+.dataset-card p {
+    margin: 4px 0;
+    display: flex;
+    justify-content: space-between;
+}
+
+.dataset-card p .label {
+    font-weight: 600;
+    min-width: 120px;
+    color: var(--text-color);
+}
+
+.dataset-card p .value {
+    text-align: right;
+    max-width: 60%;
+    word-break: break-word;
+}
+
+.dataset-card .saved-at {
+    font-size: 0.85rem;
+    color: var(--secondary-color);
+    font-style: italic;
+    margin: 0;
+    flex-shrink: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Modal-Stile */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background-color: var(--card-bg);
+    margin: 3% auto;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    width: 95%;
+    max-width: 1300px;
+    max-height: 90vh;
+    overflow-y: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+#refreshData{
+    background-color: #8badbe !important;
+    color: white;
+}
+
+#refreshData:hover {
+    background-color: #7a9bad;
+    transform: translateY(-2px);
+}
+
+#refreshData:active {
+    transform: scale(0.98);
+}
+
+#savedData {
+    margin-top: 15px;
+    flex: 1;
+    overflow-y: auto;
+    max-height: calc(90vh - 100px);
+    padding-right: 8px;
+}
+
+.close {
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    color: var(--text-color);
+}
+
+/* Button-Container für Druck- und Export-Button */
+.button-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+/* Druck-Button */
+#printData {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+/* Export-Button mit neuer Farbgebung */
+#exportData {
+    background-color: rgb(52 73 99);
+    color: white;
+}
+
+#exportData:hover {
+    background-color: rgb(36 51 69);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+#exportData:active {
+    transform: scale(0.98);
+}
+
+/* Normalize button spacing/alignment for print and PDF preview
+   Remove per-button left margins and rely on the container gap so
+   paddings/margins are visually equal in print/PDF output. */
+@media print {
+    .button-container {
+        /*gap: 10px;*/
+        align-items: center;
+        justify-content: flex-end;
+        margin-bottom: 12px;
+    }
+    .button-container .button,
+    .button-container button {
+        margin: 0 !important;
+        padding: 8px 12px !important;
+        box-shadow: none !important;
+    }
+    #printData, #exportData, #exportPdf {
+        margin-left: 0 !important;
+    }
+}
+
+/* Apply same rules for the PDF export/print-preview wrappers */
+.pdf-export .button-container,
+.print-preview .button-container {
+    gap: 10px;
+    align-items: center;
+    justify-content: flex-end;
+    margin-bottom: 12px;
+}
+.pdf-export .button-container .button,
+.print-preview .button-container .button,
+.pdf-export .button-container button,
+.print-preview .button-container button {
+    margin: 0 !important;
+    padding: 8px 12px !important;
+    box-shadow: none !important;
+}
+.pdf-export #printData, .print-preview #printData,
+.pdf-export #exportData, .print-preview #exportData,
+.pdf-export #exportPdf, .print-preview #exportPdf {
+    margin-left: 0 !important;
+}
+
+/* Night-sky background for Dark mode - DISABLED */
+#night-sky {
+    display: none;
+}
+
+/* Collapsible Dataset Styles */
+.dataset-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    color: var(--primary-color);
+    transition: background-color 0.2s ease;
+    border-radius: 4px;
+}
+
+.dataset-toggle:hover {
+    background-color: rgba(74, 111, 165, 0.05);
+}
+
+.dataset-toggle::before {
+    content: "▶";
+    display: inline-block;
+    transition: transform 0.3s ease;
+    font-size: 0.8rem;
+    width: 15px;
+    flex-shrink: 0;
+}
+
+.dataset-toggle.expanded::before {
+    transform: rotate(90deg);
+}
+
+.dataset-collapsible {
+    max-height: 1000px;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+    opacity: 1;
+}
+
+.dataset-collapsible.collapsed {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+}
+
+.dataset-wrapper.collapsed {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0;
+    margin-bottom: 10px;
+}
+
+.selected-dataset-display {
+    background: var(--card-bg);
+    border: 2px solid var(--primary-color);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .dataset-toggle:hover {
+    background-color: rgba(74, 111, 165, 0.1);
+}
+
+[data-theme="dark"] .selected-dataset-display {
+    background: #1e1e1e;
+    border-color: #5a8fbf;
+}
+
+.modal-filter-group {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-right: 8px;
+}
+
+.modal-selector-group {
+    margin-bottom: 20px;
+}
+
+.modal-filter-label {
+    font-weight: 600;
+}
+
+.modal-filter-label-nowrap {
+    white-space: nowrap;
+}
+
+.modal-filter-row,
+.modal-selector-row {
+    display: flex;
+    align-items: center;
+}
+
+.modal-filter-row {
+    gap: 8px;
+}
+
+.modal-selector-row {
+    gap: 10px;
+}
+
+.search-input-wrap {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    opacity: 0.6;
+    pointer-events: none;
+    flex-shrink: 0;
+    color: var(--text-color);
+}
+
+.search-icon svg {
+    width: 100%;
+    height: 100%;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.modal-search-input {
+    width: 100%;
+    padding: 10px 12px 10px 3%;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    box-sizing: border-box;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.modal-search-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(52, 73, 99, 0.1);
+}
+
+[data-theme="dark"] .modal-search-input {
+    background-color: #1e1e1e;
+    color: #f0f0f0;
+    border-color: #444;
+}
+
+[data-theme="dark"] .modal-search-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(52, 73, 99, 0.2);
+}
+
+[data-theme="dark"] .search-icon {
+    color: #b0b0b0;
+}
+
+.hidden-file-input {
+    display: none;
+}
+
+/* Dataset selector dropdown styling */
+#datasetSelector {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border: 1.5px solid var(--border-color);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex: 1;
+    min-width: 200px;
+}
+
+#datasetSelector:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+#datasetSelector:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(74, 111, 165, 0.15);
+}
+
+[data-theme="dark"] #datasetSelector {
+    background-color: #1e1e1e;
+    color: #f0f0f0;
+    border-color: #444;
+}
+
+[data-theme="dark"] #datasetSelector:hover {
+    border-color: var(--primary-color);
+}
+
+[data-theme="dark"] #datasetSelector:focus {
+    box-shadow: 0 0 0 3px rgba(74, 111, 165, 0.2);
+}
+
+/* Export button styling when placed in dropdown container */
+#exportButtonContainer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#exportData {
+    padding: 10px 16px;
+    white-space: nowrap;
+    border-radius: 6px;
+    font-size: 15px;
+}
+
+/* ===== OVERVIEW PAGE STYLES ===== */
+
+.overview-page .subpage-layout {
+    width: min(95vw, 1200px);
+    max-width: 1200px;
+    gap: 1.5rem;
+}
+
+.overview-search-section {
+    width: 100%;
+    padding: 1.5rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+}
+
+.overview-search-section h2 {
+    margin: 0 0 1rem 0;
+    font-size: 1.2rem;
+    color: var(--primary-color);
+}
+
+.overview-search-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.search-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.search-input-group label {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.overview-search-input {
+    width: 100%;
+    padding: 12px 12px 12px 42px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 15px;
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.overview-search-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(52, 73, 99, 0.1);
+}
+
+[data-theme="dark"] .overview-search-input {
+    background-color: #1e1e1e;
+    color: #f0f0f0;
+    border-color: #444;
+}
+
+[data-theme="dark"] .overview-search-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(52, 73, 99, 0.2);
+}
+
+.overview-content {
+    width: 100%;
+    padding: 1.5rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    min-height: 300px;
+}
+
+.overview-status-message {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--text-color);
+    font-size: 1rem;
+}
+
+.overview-table-container {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.overview-table-container.hidden {
+    display: none;
+}
+
+.overview-info {
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    color: var(--text-color);
+    opacity: 0.8;
+}
+
+.overview-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+.overview-table thead {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 600;
+}
+
+.overview-table thead th {
+    padding: 12px 10px;
+    text-align: left;
+    border-bottom: 2px solid var(--primary-color);
+    white-space: nowrap;
+}
+
+.overview-table tbody tr {
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.15s ease;
+}
+
+.overview-table tbody tr:hover {
+    background-color: rgba(52, 73, 99, 0.05);
+}
+
+[data-theme="dark"] .overview-table tbody tr:hover {
+    background-color: rgba(52, 73, 99, 0.15);
+}
+
+.overview-table tbody td {
+    padding: 10px;
+    word-break: break-word;
+}
+
+.overview-cell-ticket {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.overview-cell-device {
+    font-size: 0.9rem;
+}
+
+.overview-cell-assetid {
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: var(--text-color);
+}
+
+.overview-cell-date {
+    font-size: 0.9rem;
+    color: var(--text-color);
+    opacity: 0.8;
+    white-space: nowrap;
+}
+
+.overview-no-results {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-color);
+    font-size: 1rem;
+    opacity: 0.7;
+}
+
+.overview-no-results.hidden {
+    display: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .overview-page .subpage-layout {
+        width: 100%;
+        padding: 0 0.5rem;
+    }
+
+    .overview-search-section,
+    .overview-content {
+        padding: 1rem;
+        border-radius: 8px;
+    }
+
+    .overview-table {
+        font-size: 0.85rem;
+    }
+
+    .overview-table thead th {
+        padding: 8px 6px;
+    }
+
+    .overview-table tbody td {
+        padding: 6px;
+    }
+
+    .overview-table-container {
+        overflow-x: auto;
+    }
+}
+
+/* Subtle overlay to slightly darken container edges on very bright backgrounds */
+#night-sky::after {
+    display: none;
+
+/* Day-sky background for Light mode - DISABLED */
+#day-sky {
+    display: none;
+}
