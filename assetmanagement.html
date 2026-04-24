@@ -58,7 +58,6 @@
                         <input id="defaultCostcenter" type="text" class="asset-settings-input" data-i18n-placeholder="asset-default-costcenter-placeholder" placeholder="z. B. 1100">
 
                         <button id="saveDefaultsButton" type="button" class="button secondary" data-i18n="asset-default-save-button">Standardwerte speichern</button>
-                        <button id="clearInventoryButton" type="button" class="button secondary" data-i18n="asset-clear-inventory-button">Alle Datensätze löschen</button>
 
                         <div class="asset-defaults-table-wrap">
                             <table id="assetDefaultsTable" class="asset-defaults-table">
@@ -66,6 +65,8 @@
                                 <tbody></tbody>
                             </table>
                         </div>
+
+                        <button id="clearInventoryButton" type="button" class="button asset-danger-button" data-i18n="asset-clear-inventory-button">Alle Datensätze löschen</button>
                     </div>
                 </div>
 
@@ -83,17 +84,63 @@
 
                     <div id="assetSettingsAdminPanel" class="asset-settings-section hidden" aria-hidden="true">
                         <h3 id="assetAdminHeading">Asset Administration</h3>
-                        <label for="assetAdminTypeInput" id="assetAdminTypeLabel">Neuen Gerätetyp anlegen oder bearbeiten</label>
-                        <input id="assetAdminTypeInput" type="text" class="asset-settings-input" placeholder="z. B. Surface">
-                        <div class="asset-admin-actions">
-                            <button id="assetAdminAcceptTypeButton" type="button" class="button secondary">Typ akzeptieren</button>
-                            <button id="assetAdminCancelEditButton" type="button" class="button secondary hidden">Bearbeitung abbrechen</button>
-                        </div>
-                        <div class="asset-defaults-table-wrap">
-                            <table id="assetTypeAdminTable" class="asset-defaults-table">
-                                <thead></thead>
-                                <tbody></tbody>
-                            </table>
+                        <div class="asset-admin-sublist">
+                            <div class="asset-admin-subitem">
+                                <button
+                                    id="assetAdminTypeSubToggle"
+                                    type="button"
+                                    class="asset-settings-menu-item asset-settings-subitem-button"
+                                    aria-controls="assetAdminTypeSubPanel"
+                                    aria-expanded="false"
+                                >
+                                    Neuen Gerätetyp anlegen oder bearbeiten
+                                </button>
+
+                                <div id="assetAdminTypeSubPanel" class="asset-settings-subsection hidden" aria-hidden="true">
+                                    <label for="assetAdminTypeInput" id="assetAdminTypeLabel">Gerätetyp</label>
+                                    <input id="assetAdminTypeInput" type="text" class="asset-settings-input" placeholder="z. B. Surface">
+                                    <div class="asset-admin-actions">
+                                        <button id="assetAdminAcceptTypeButton" type="button" class="button secondary">Typ akzeptieren</button>
+                                        <button id="assetAdminCancelEditButton" type="button" class="button secondary hidden">Bearbeitung abbrechen</button>
+                                    </div>
+                                    <div class="asset-defaults-table-wrap">
+                                        <table id="assetTypeAdminTable" class="asset-defaults-table">
+                                            <thead></thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="asset-admin-subitem">
+                                <button
+                                    id="assetAdminModelSubToggle"
+                                    type="button"
+                                    class="asset-settings-menu-item asset-settings-subitem-button"
+                                    aria-controls="assetAdminModelSubPanel"
+                                    aria-expanded="false"
+                                >
+                                    Neuen Typ anlegen oder bearbeiten
+                                </button>
+
+                                <div id="assetAdminModelSubPanel" class="asset-settings-subsection hidden" aria-hidden="true">
+                                    <h3 id="assetModelAdminHeading">Typ Administration</h3>
+                                    <label for="assetModelTypeSelect" id="assetModelTypeLabel">Gerätetyp für Typ</label>
+                                    <select id="assetModelTypeSelect" class="asset-settings-input"></select>
+                                    <label for="assetModelAdminInput" id="assetModelAdminLabel">Typ</label>
+                                    <input id="assetModelAdminInput" type="text" class="asset-settings-input" placeholder="z. B. Galaxy Tab S9">
+                                    <div class="asset-admin-actions">
+                                        <button id="assetAdminAcceptModelButton" type="button" class="button secondary">Typ akzeptieren</button>
+                                        <button id="assetAdminCancelModelEditButton" type="button" class="button secondary hidden">Bearbeitung abbrechen</button>
+                                    </div>
+                                    <div class="asset-defaults-table-wrap">
+                                        <table id="assetModelAdminTable" class="asset-defaults-table">
+                                            <thead></thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -184,6 +231,18 @@
             <a class="back-link back-assets" href="index.html" data-i18n="back-home">Zurück zur Startseite</a>
         </main>
     </div>
+
+    <div id="assetDetailModal" class="modal asset-detail-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="assetDetailTitle">
+        <div class="modal-content asset-detail-modal-content">
+            <button id="assetDetailClose" type="button" class="close asset-detail-close" aria-label="Schließen">&times;</button>
+            <div class="asset-detail-modal-header">
+                <h2 id="assetDetailTitle">Asset-Übersicht</h2>
+                <p id="assetDetailSubtitle" class="asset-detail-subtitle"></p>
+            </div>
+            <div id="assetDetailBody" class="asset-detail-grid"></div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="app-version.js"></script>
     <script src="navigation.js"></script>

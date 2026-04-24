@@ -1,4 +1,4 @@
-const APP_VERSION = '006';
+const APP_VERSION = '015';
 
 function injectAppVersionBadge() {
     if (!document.body || document.getElementById('appVersionBadge')) {

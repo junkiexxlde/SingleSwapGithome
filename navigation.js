@@ -127,6 +127,54 @@ const navTranslations = {
     }
 };
 
+const breadcrumbPageMap = {
+    'index.html': 'nav-home',
+    'singleswap.html': 'nav-new-case',
+    'overview.html': 'nav-overview',
+    'assetmanagement.html': 'nav-assets',
+    'monthlyinventory.html': 'nav-monthly-inventory'
+};
+
+function getCurrentPageName() {
+    const path = window.location.pathname.split('/').pop() || 'index.html';
+    return breadcrumbPageMap[path] || 'nav-home';
+}
+
+function renderTopbarBreadcrumb(lang) {
+    const leftHost = document.querySelector('.topbar-left');
+    if (!leftHost) {
+        return;
+    }
+
+    const dict = navTranslations[lang] || navTranslations.de;
+    const currentPageKey = getCurrentPageName();
+    const crumbItems = [{ href: 'index.html', key: 'nav-home', current: currentPageKey === 'nav-home' }];
+
+    if (currentPageKey !== 'nav-home') {
+        const currentPath = window.location.pathname.split('/').pop() || 'index.html';
+        crumbItems.push({ href: currentPath, key: currentPageKey, current: true });
+    }
+
+    const breadcrumbHtml = crumbItems.map((item, index) => {
+        const label = dict[item.key] || item.key;
+        const separator = index > 0 ? '<span class="topbar-breadcrumb-separator" aria-hidden="true">\\</span>' : '';
+        if (item.current) {
+            return `${separator}<span class="topbar-breadcrumb-current" aria-current="page">${label}</span>`;
+        }
+        return `${separator}<a class="topbar-breadcrumb-link" href="${item.href}">${label}</a>`;
+    }).join('');
+
+    let breadcrumbHost = leftHost.querySelector('.topbar-breadcrumb-host');
+    if (!breadcrumbHost) {
+        breadcrumbHost = document.createElement('nav');
+        breadcrumbHost.className = 'topbar-breadcrumb topbar-breadcrumb-host';
+        breadcrumbHost.setAttribute('aria-label', 'Breadcrumb');
+        leftHost.appendChild(breadcrumbHost);
+    }
+
+    breadcrumbHost.innerHTML = breadcrumbHtml;
+}
+
 function setNavLanguage(lang) {
     const dict = navTranslations[lang] || navTranslations.de;
 
@@ -159,6 +207,8 @@ function setNavLanguage(lang) {
             document.title = dict[titleKey];
         }
     }
+
+    renderTopbarBreadcrumb(lang);
 
     const deButton = document.getElementById('lang-de');
     const enButton = document.getElementById('lang-en');

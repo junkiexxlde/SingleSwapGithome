@@ -250,12 +250,65 @@ const INVENTORY_DB_VERSION = 3;
 const INVENTORY_STORE = 'assets_inventory';
 const INVENTORY_MONTHLY_STORE = 'monthly_inventory_movements';
 const MANAGED_DEVICE_TYPES_KEY = 'mdmtool_managed_device_types_v1';
+const MANAGED_MODELS_KEY = 'mdmtool_managed_models_v1';
 const DEFAULT_DEVICE_TYPES = ['iPhone', 'iPad', 'MacBook'];
+const CANONICAL_DEVICE_TYPE_MAP = {
+    iphone: 'iPhone',
+    ipad: 'iPad',
+    macbook: 'MacBook'
+};
 let inventoryAssets = [];
 let versionFilterRefreshers = [];
 
 // Sprachumschaltung
 let currentLanguage = 'de';
+
+const breadcrumbPageMap = {
+    'index.html': 'nav-home',
+    'singleswap.html': 'nav-new-case',
+    'overview.html': 'nav-overview',
+    'assetmanagement.html': 'nav-assets',
+    'monthlyinventory.html': 'nav-monthly-inventory'
+};
+
+function getCurrentPageName() {
+    const path = window.location.pathname.split('/').pop() || 'index.html';
+    return breadcrumbPageMap[path] || 'nav-home';
+}
+
+function renderTopbarBreadcrumb(lang) {
+    const leftHost = document.querySelector('.topbar-left');
+    if (!leftHost) {
+        return;
+    }
+
+    const currentPageKey = getCurrentPageName();
+    const crumbItems = [{ href: 'index.html', key: 'nav-home', current: currentPageKey === 'nav-home' }];
+
+    if (currentPageKey !== 'nav-home') {
+        const currentPath = window.location.pathname.split('/').pop() || 'index.html';
+        crumbItems.push({ href: currentPath, key: currentPageKey, current: true });
+    }
+
+    const breadcrumbHtml = crumbItems.map((item, index) => {
+        const label = translations[lang][item.key] || item.key;
+        const separator = index > 0 ? '<span class="topbar-breadcrumb-separator" aria-hidden="true">\\</span>' : '';
+        if (item.current) {
+            return `${separator}<span class="topbar-breadcrumb-current" aria-current="page">${label}</span>`;
+        }
+        return `${separator}<a class="topbar-breadcrumb-link" href="${item.href}">${label}</a>`;
+    }).join('');
+
+    let breadcrumbHost = leftHost.querySelector('.topbar-breadcrumb-host');
+    if (!breadcrumbHost) {
+        breadcrumbHost = document.createElement('nav');
+        breadcrumbHost.className = 'topbar-breadcrumb topbar-breadcrumb-host';
+        breadcrumbHost.setAttribute('aria-label', 'Breadcrumb');
+        leftHost.appendChild(breadcrumbHost);
+    }
+
+    breadcrumbHost.innerHTML = breadcrumbHtml;
+}
 
 function cleanLabel(key) {
     const raw = translations[currentLanguage][key] || '';
@@ -301,9 +354,13 @@ function normalizeTypeToken(value) {
     return String(value || '')
         .trim()
         .toLowerCase()
-        .replace(/_/g, '-')
-        .replace(/\s+/g, '')
-        .replace(/^type-/, '');
+        .replace(/^type[\s_-]*/g, '')
+        .replace(/[_\-\s]+/g, '');
+}
+
+function canonicalDeviceTypeName(value) {
+    const normalized = normalizeTypeToken(value);
+    return CANONICAL_DEVICE_TYPE_MAP[normalized] || String(value || '').trim();
 }
 
 function loadManagedDeviceTypes() {
@@ -315,7 +372,7 @@ function loadManagedDeviceTypes() {
         const values = [];
 
         source.forEach((entry) => {
-            const clean = String(entry || '').trim();
+            const clean = canonicalDeviceTypeName(entry);
             if (!clean) {
                 return;
             }
@@ -330,6 +387,43 @@ function loadManagedDeviceTypes() {
         return values.sort((left, right) => left.localeCompare(right, undefined, { sensitivity: 'base' }));
     } catch {
         return [...DEFAULT_DEVICE_TYPES];
+    }
+}
+
+function normalizeModelToken(value) {
+    return String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, ' ');
+}
+
+function loadManagedModels() {
+    try {
+        const raw = localStorage.getItem(MANAGED_MODELS_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(parsed)) {
+            return [];
+        }
+
+        const seen = new Set();
+        const output = [];
+        parsed.forEach((entry) => {
+            const type = canonicalDeviceTypeName(entry?.type);
+            const name = String(entry?.name || '').trim();
+            if (!type || !name) {
+                return;
+            }
+            const key = `${normalizeTypeToken(type)}::${normalizeModelToken(name)}`;
+            if (seen.has(key)) {
+                return;
+            }
+            seen.add(key);
+            output.push({ type, name });
+        });
+
+        return output;
+    } catch {
+        return [];
     }
 }
 
@@ -531,13 +625,13 @@ function setLanguage(lang) {
     if (translations[lang] && translations[lang]['title']) {
         document.title = translations[lang]['title'];
     }
+
+    renderTopbarBreadcrumb(lang);
 }
 
 // Lade gespeicherte Sprache
 const savedLanguage = localStorage.getItem('language');
-if (savedLanguage) {
-    setLanguage(savedLanguage);
-}
+setLanguage(savedLanguage || currentLanguage);
 
 // Dark Mode Toggle
 const themeToggle = document.getElementById('theme-toggle');
@@ -2917,6 +3011,7 @@ function filterVersionOptions(typeSelectId, versionSelectId) {
         const currentValue = versionSelect.value;
 
         Array.from(versionSelect.querySelectorAll('option[data-dynamic-version="1"]')).forEach((option) => option.remove());
+        Array.from(versionSelect.querySelectorAll('option[data-managed-model-version="1"]')).forEach((option) => option.remove());
     
         Array.from(versionSelect.options).forEach(option => {
             if (option.value === '') {
@@ -2929,6 +3024,25 @@ function filterVersionOptions(typeSelectId, versionSelectId) {
 
         const valuesInSelect = new Set(Array.from(versionSelect.options).map((option) => normalizeInventoryValue(option.value)));
         const dynamicModels = selectedType ? getInventoryModelsForType(selectedType) : [];
+        const managedModels = selectedType
+            ? loadManagedModels()
+                .filter((entry) => normalizeInventoryValue(entry.type) === normalizeInventoryValue(selectedType))
+                .map((entry) => entry.name)
+            : [];
+
+        managedModels.forEach((model) => {
+            if (valuesInSelect.has(normalizeInventoryValue(model))) {
+                return;
+            }
+
+            const option = document.createElement('option');
+            option.value = model;
+            option.textContent = model;
+            option.setAttribute('data-type', selectedType);
+            option.setAttribute('data-managed-model-version', '1');
+            versionSelect.appendChild(option);
+            valuesInSelect.add(normalizeInventoryValue(model));
+        });
 
         dynamicModels.forEach((model) => {
             if (valuesInSelect.has(normalizeInventoryValue(model))) {

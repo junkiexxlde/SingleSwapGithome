@@ -283,6 +283,143 @@ MDMTool/
    - Inhalte sind direkt am jeweiligen Menüpunkt verankert
    - Menübreite reduziert für kompaktere Darstellung
 
+### 4.14 Version 007 – Typ (Model) Administration erweitert
+
+**Grund für Versionssprung auf 007:** Erweiterung der Asset-Administration um eine zweite Stammdatenpflege für Asset-Typen (Modelle) mit seitenübergreifender Wirkung.
+
+1. **Typ-Administration im Options-Menü ergänzt:**
+   - Neuer Bereich „Typ Administration" in `assetmanagement.html`
+   - Modelle können analog zu Gerätetypen erstellt, bearbeitet und entfernt werden
+   - Jeder Modell-Eintrag ist einem Gerätetyp zugeordnet
+
+2. **Persistente Modell-Stammdaten eingeführt:**
+   - Neue lokale Speicherung über `mdmtool_managed_models_v1`
+   - Standardmodelle und benutzerdefinierte Modelle werden zusammengeführt
+
+3. **Importvalidierung angepasst:**
+   - Importierte Zeilen werden gegen die gepflegten Modell-/Gerätetyp-Kombinationen validiert
+   - Nicht akzeptierte Modelle oder unpassende Kombinationen werden als ungültig markiert
+
+4. **SingleSwap-Modellauswahl erweitert:**
+   - `scripts.js` ergänzt modellseitig verwaltete Optionen in den Typ-Dropdowns
+   - Somit stehen neu gepflegte Modelle direkt in der Fallanlage zur Auswahl
+
+### 4.15 Version 008 – Foldbare Unterpunkte in Asset Administration
+
+**Grund für Versionssprung auf 008:** UX-Verbesserung im Options-Menü für klarere Struktur der Administrationsfunktionen.
+
+1. **Unterpunkte als foldbare Sub-List eingeführt:**
+   - „Neuen Gerätetyp anlegen oder bearbeiten" wurde als eigener Unterpunkt umgesetzt
+   - „Neuen Typ anlegen oder bearbeiten" wurde als eigener Unterpunkt umgesetzt
+
+2. **Jeder Unterpunkt mit eigenem Toggle:**
+   - Klick auf den jeweiligen Unterpunkt klappt nur dessen Inhalt auf/zu
+   - Die zugehörigen Eingaben/Buttons/Tabellen bleiben direkt am Unterpunkt verankert
+
+3. **Bestehende Funktionen unverändert übernommen:**
+   - CRUD-Logik für Gerätetyp und Typ (Model) bleibt technisch unverändert
+   - Es wurde nur die Menüstruktur und Interaktionsführung angepasst
+
+### 4.16 Version 009 – Asset-Detailkarte in der Lagerlistenverwaltung
+
+**Grund für Versionssprung auf 009:** Die Lagerliste kann Asset-Datensätze jetzt nicht mehr nur tabellarisch anzeigen, sondern auch vollständig als Detailansicht lesen und um zusätzliche Felder erweitern.
+
+1. **Asset-ID als Detail-Link umgesetzt:**
+   - In der Lagerlisten-Tabelle ist die Asset-ID jetzt anklickbar
+   - Ein Klick öffnet eine Übersichtskarte mit allen zu diesem Asset gespeicherten Datenbankfeldern
+
+2. **Zusätzliche Asset-Felder dauerhaft erhalten:**
+   - `assetmanagement.js` reduziert gespeicherte Datensätze nicht mehr nur auf die Standardspalten
+   - Dadurch bleiben auch zukünftige Zusatzfelder im IndexedDB-Datensatz erhalten und werden in der Detailkarte angezeigt
+
+3. **Editierbare Zusatzfelder mit Schloss-Mechanik ergänzt:**
+   - Neu hinzugefügt wurden die Felder „Geplante Aussonderung" und „Garantieablauf"
+   - Beide Felder lassen sich in der Detailkarte per geschlossenem/offenem Schloss entsperren, bearbeiten und wieder speichern
+
+### 4.17 Version 010 – Seriennummer als editierbare Asset-Metadaten
+
+**Grund für Versionssprung auf 010:** Die Lagerlistenverwaltung muss auch nach Reparaturen Änderungen an der Seriennummer direkt am Asset zulassen.
+
+1. **Seriennummer in der Detailkarte entsperrbar gemacht:**
+   - Das Feld „Seriennummer" nutzt jetzt dieselbe Schloss-Mechanik wie die übrigen editierbaren Asset-Metadaten
+   - Dadurch kann die Seriennummer gezielt für ein einzelnes Asset angepasst und wieder gespeichert werden
+
+2. **Tabellenansicht aktualisiert sich über denselben Datensatz:**
+   - Die geänderte Seriennummer wird direkt im gespeicherten Asset-Datensatz in IndexedDB aktualisiert
+   - Da die Haupttabelle auf denselben Datensätzen basiert, ist die neue Seriennummer anschließend auch dort sichtbar
+
+### 4.18 Version 011 – Kanonische iPhone/iPad-Schreibweise beim Lagerlisten-Import
+
+**Grund für Versionssprung auf 011:** Gerätetypen aus der Lagerliste sollen verschiedene Schreibweisen akzeptieren, aber in App und Datenbestand immer in einer einheitlichen Form gespeichert werden.
+
+1. **Import-Normalisierung für Gerätetypen erweitert:**
+   - Schreibweisen wie `iphone`, `I Phone`, `i-phone`, `ipad` oder `i pad` werden beim Import akzeptiert
+   - Bekannte Gerätetypen werden vor dem Speichern konsequent auf `iPhone`, `iPad` und `MacBook` normalisiert
+
+2. **Bestehende Lagerdaten beim Laden kanonisiert:**
+   - Bereits gespeicherte Asset-Datensätze werden beim Laden geprüft
+   - Falls ältere Schreibweisen vorhanden sind, werden sie direkt in IndexedDB auf die kanonische Form zurückgeschrieben
+
+3. **App-seitige Typoptionen mit derselben Kanonisierung versehen:**
+   - `scripts.js` nutzt dieselbe Typnormalisierung für verwaltete Gerätetypen und Modell-Zuordnungen
+   - Dadurch erscheinen bekannte Gerätetypen appweit nur noch in der gewünschten Schreibweise
+
+### 4.19 Version 012 – Löschsperre für verwendete Typen in der Typ-Administration
+
+**Grund für Versionssprung auf 012:** Ein Typ darf in der Typ-Administration nicht entfernt werden, solange noch Assets dieses Typs in der Lagerliste vorhanden sind.
+
+1. **Lagerlisten-Prüfung vor dem Entfernen ergänzt:**
+   - `assetmanagement.js` prüft beim Entfernen eines Typs jetzt die aktuelle Lagerliste auf vorhandene Referenzen
+   - Nur wenn kein Asset mehr mit dieser Gerätetyp-/Typ-Kombination existiert, wird der Typ tatsächlich gelöscht
+
+2. **Blockierende Rückmeldung für Nutzer ergänzt:**
+   - Bei einer verhinderten Löschung erscheint eine Popup-Meldung mit dem Grund
+   - Dieselbe Begründung wird zusätzlich im `asset-status` angezeigt, analog zu den übrigen Statusmeldungen
+
+### 4.20 Version 013 – Breadcrumb-Fix für SingleSwap und zentrierte Topbar
+
+**Grund für Versionssprung auf 013:** Die gemeinsame Breadcrumb-Navigation funktionierte in `singleswap.html` nicht, und der Topbar-Titel sollte trotz Breadcrumb links visuell mittig bleiben.
+
+1. **Breadcrumb in der SingleSwap-Shell ergänzt:**
+   - `scripts.js` rendert die Breadcrumb-Navigation jetzt direkt in der eigenen Topbar-Logik von `singleswap.html`
+   - Damit nutzt SingleSwap denselben Breadcrumb-Pfad wie die übrigen Seiten, ohne zusätzlich `navigation.js` laden zu müssen
+
+2. **Topbar-Spalten symmetrisch ausgerichtet:**
+   - `styles.css` verwendet jetzt links und rechts gleichgewichtete Grid-Spalten um den mittleren Titel
+   - Der Titel „Mobile Device Warranty Management Tool“ bleibt dadurch auch mit Breadcrumb links mittig ausgerichtet
+
+3. **Mobile Zentrierung nachgezogen:**
+   - Auf kleineren Breakpoints bleibt der Topbar-Titel ebenfalls zentriert
+   - Die Breadcrumb kann links eingeblendet werden, ohne den Titel auf links zu ziehen
+
+### 4.21 Version 014 – Kompaktere SingleSwap-Topbar auf kleinen Breiten
+
+**Grund für Versionssprung auf 014:** In `singleswap.html` sollte der mittige Titel auch bei enger Breite stabil bleiben, obwohl rechts mehrere Topbar-Bedienelemente liegen.
+
+1. **SingleSwap-rechtsseitig verdichtet:**
+   - Für SingleSwap wurden die Abstände der rechten Topbar-Gruppe auf kleineren Breakpoints reduziert
+   - Die Sprachumschaltung nutzt dort kompaktere Button-Abstände und kleinere Innenabstände
+
+2. **Icon-Buttons auf Mobile verkleinert:**
+   - Theme- und Einstellungsbutton werden auf kleineren Breiten in SingleSwap gezielt etwas kleiner gerendert
+   - Dadurch bleibt mehr Platz für den zentrierten Titel in der mittleren Topbar-Spalte
+
+3. **Änderung bewusst seitenlokal gehalten:**
+   - Die Verdichtung gilt nur für `singleswap.html`
+   - Andere Seiten behalten ihre bisherige Topbar-Dichte und Bediengröße
+
+### 4.22 Version 015 – SingleSwap ohne Breadcrumb auf sehr kleinen Breiten
+
+**Grund für Versionssprung auf 015:** Auf sehr kleinen Displays konkurrierte der Breadcrumb in `singleswap.html` weiterhin mit dem mittig zentrierten Titel.
+
+1. **Breadcrumb unter 480 Pixel ausgeblendet:**
+   - In `singleswap.html` wird der Breadcrumb auf sehr kleinen Breiten nicht mehr angezeigt
+   - Dadurch steht die gesamte linke Topbar-Fläche dem zentrierten Titel zur Verfügung
+
+2. **Änderung nur für SingleSwap:**
+   - Die Ausblendung gilt ausschließlich für `singleswap.html`
+   - Andere Seiten behalten ihren Breadcrumb auch auf kleinen Breiten unverändert
+
 ---
 
 ## 5. CSS-Architektur
