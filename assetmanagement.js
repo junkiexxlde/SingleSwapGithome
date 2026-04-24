@@ -41,6 +41,11 @@ const HEADER_ALIASES = {
 
 const REQUIRED_IMPORT_KEYS = ['assetid'];
 const REQUIRED_DEFAULT_KEYS = ['assigned', 'managedby', 'costcenter'];
+const DEFAULT_INVENTORY_DEFAULTS = {
+    assigned: 'John Doe',
+    managedby: 'Jane Doe',
+    costcenter: '1234'
+};
 
 // Mirrors the selectable versions and data-type mapping from singleswap.html.
 const VERSION_DEVICE_TYPE_MAP = {
@@ -62,11 +67,7 @@ let selectedFile = null;
 let lastValidationReport = [];
 let currentPage = 1;
 const PAGE_SIZE = 10;
-let inventoryDefaults = {
-    assigned: '',
-    managedby: '',
-    costcenter: ''
-};
+let inventoryDefaults = { ...DEFAULT_INVENTORY_DEFAULTS };
 let managedDeviceTypes = [...DEFAULT_DEVICE_TYPES];
 let managedModels = [];
 let editingTypeName = '';
@@ -1551,7 +1552,7 @@ async function loadDefaultsFromDb(db) {
         const store = tx.objectStore(INVENTORY_DEFAULTS_STORE);
         const request = store.get(DEFAULTS_RECORD_ID);
         request.onerror = () => reject(request.error);
-        request.onsuccess = () => resolve(sanitizeDefaults(request.result || {}));
+        request.onsuccess = () => resolve(request.result ? sanitizeDefaults(request.result) : null);
     });
 }
 
@@ -1584,6 +1585,27 @@ async function saveDefaultsToDb(defaults) {
         tx.onabort = () => reject(tx.error);
     });
     db.close();
+}
+
+async function seedDefaultsIfNeeded(db, rows, loadedDefaults) {
+    if (loadedDefaults) {
+        return loadedDefaults;
+    }
+
+    if (rows.length > 0) {
+        return { ...DEFAULT_INVENTORY_DEFAULTS };
+    }
+
+    const seededDefaults = { ...DEFAULT_INVENTORY_DEFAULTS };
+    await new Promise((resolve, reject) => {
+        const tx = db.transaction(INVENTORY_DEFAULTS_STORE, 'readwrite');
+        const store = tx.objectStore(INVENTORY_DEFAULTS_STORE);
+        store.put({ id: DEFAULTS_RECORD_ID, ...seededDefaults });
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error);
+    });
+    return seededDefaults;
 }
 
 async function applyDefaultsToExistingRows(defaults) {
@@ -1657,7 +1679,8 @@ async function bootstrapRowsAndDefaults() {
             await persistCanonicalInventoryRows(db, rows);
         }
 
-        inventoryDefaults = await loadDefaultsFromDb(db);
+        const loadedDefaults = await loadDefaultsFromDb(db);
+        inventoryDefaults = await seedDefaultsIfNeeded(db, rows, loadedDefaults);
         db.close();
 
         assetRows = rows;
@@ -1677,7 +1700,7 @@ async function bootstrapRowsAndDefaults() {
         );
     } catch {
         assetRows = [];
-        inventoryDefaults = { assigned: '', managedby: '', costcenter: '' };
+        inventoryDefaults = { ...DEFAULT_INVENTORY_DEFAULTS };
         refreshFilterOptions();
         resetToFirstPage();
         renderTable();
