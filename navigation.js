@@ -322,3 +322,41 @@ function toggleSettingsMenu() {
         }
     });
 })();
+
+// Service Worker registration (shared across all pages via navigation.js)
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')
+            .then(registration => {
+                console.log('[SW] Registered, scope:', registration.scope);
+            })
+            .catch(err => console.error('[SW] Registration failed:', err));
+
+        // Show a non-blocking reload banner when the SW_UPDATED message arrives
+        navigator.serviceWorker.addEventListener('message', event => {
+            if (event.data && event.data.type === 'SW_UPDATED') {
+                showSwUpdateBanner(event.data.version);
+            }
+        });
+    });
+}
+
+function showSwUpdateBanner(version) {
+    if (document.getElementById('swUpdateBanner')) return;
+    const lang = localStorage.getItem('language') || 'de';
+    const text = lang === 'en'
+        ? `App updated to version ${version}. Reload for the latest version.`
+        : `App auf Version ${version} aktualisiert. Seite neu laden für die aktuelle Version.`;
+    const btnLabel = lang === 'en' ? 'Reload' : 'Neu laden';
+    const banner = document.createElement('div');
+    banner.id = 'swUpdateBanner';
+    banner.className = 'sw-update-banner';
+    banner.innerHTML = `
+        <span class="sw-update-text">${text}</span>
+        <button class="sw-update-reload button secondary" type="button">${btnLabel}</button>
+    `;
+    banner.querySelector('.sw-update-reload').addEventListener('click', () => {
+        window.location.reload();
+    });
+    document.body.appendChild(banner);
+}

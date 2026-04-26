@@ -25,8 +25,11 @@ Bewusster Verzicht auf Frameworks (React, Vue, etc.) zugunsten von:
 
 Die Anwendung ist als PWA ausgebaut:
 - `manifest.json` definiert App-Name, Icons und Startparameter für die Installation auf dem Homescreen
-- `service-worker.js` implementiert Cache-First-Strategie für Offline-Betrieb; die Core-Assets (`index.html`, `styles.css`, `scripts.js`, `manifest.json`) werden beim ersten Aufruf im Cache des Browsers (`mdwmt-v1`) gespeichert
-- Der Service Worker registriert sich per `navigator.serviceWorker.register()` im `DOMContentLoaded`-Block in `singleswap.html`
+- `service-worker.js` implementiert eine **Network-First-Strategie**: bei aktiver Verbindung werden stets frische Assets vom Server geholt und im Cache aktualisiert; erst bei Offline-Betrieb greift der Cache als Fallback
+- Der Cache-Name ist an die App-Version gekoppelt (`mdwmt-v{VERSION}`); ein Versionsbump in `app-version.js` **und** `service-worker.js` löscht automatisch alle älteren Cache-Generationen beim nächsten Aktivierungszyklus
+- `skipWaiting()` im Install-Event und `clients.claim()` im Activate-Event stellen sicher, dass ein neu installierter Service Worker sofort alle offenen Tabs übernimmt – ohne manuelle Seitenaktualisierung des Nutzers
+- Der Service Worker sendet nach erfolgreicher Aktivierung eine `SW_UPDATED`-Nachricht an alle offenen Fenster; `navigation.js` wertet diese aus und zeigt einen nicht-blockierenden Reload-Banner
+- Die Service-Worker-Registrierung ist aus `singleswap.html` in **`navigation.js`** verschoben worden, damit alle Seiten die Update-Logik erhalten
 
 ### 2.3 IndexedDB für lokale Persistenz
 
@@ -472,6 +475,32 @@ Für jede **größere Änderung** (neue Kernfunktion, relevante UI/UX-Änderung,
    - was funktional neu ist,
    - welche Seiten/Module betroffen sind,
    - warum der Versionssprung notwendig war.
+
+---
+
+## 9. Release-Checkliste (Deployment)
+
+Bei jedem Deployment folgende Schritte ausführen, um sicherzustellen, dass Nutzer keine veralteten Assets aus dem Service-Worker-Cache erhalten:
+
+1. **Versionsnummer erhöhen** in beiden Dateien (müssen übereinstimmen):
+   - `app-version.js` → `APP_VERSION = 'NNN'`
+   - `service-worker.js` → `SW_VERSION = 'NNN'`
+2. **Alle geänderten Dateien deployen** (der neue `CACHE_NAME` sorgt dafür, dass der alte Cache bei der Aktivierung des neuen SW automatisch gelöscht wird).
+3. **Verifizierung auf der Live-Seite:**
+   - Seite im Browser öffnen → Reload-Banner prüfen (erscheint kurz nach SW-Aktivierung).
+   - In DevTools → Application → Service Workers: neuen SW mit aktuellem `CACHE_NAME` (`mdwmt-vNNN`) sehen.
+   - In DevTools → Application → Cache Storage: nur eine Cache-Generation vorhanden.
+   - Versionsbadge in der Ecke der Seite zeigt neue Nummer.
+
+### Troubleshooting: Hosted-Verhalten weicht von lokal ab
+
+Falls ein Feature lokal funktioniert, aber auf dem Webserver nicht:
+
+1. DevTools → Application → Service Workers → **Unregister**
+2. DevTools → Application → Storage → **Clear site data**
+3. Seite hart neu laden (`Ctrl+Shift+R`)
+
+Wenn das Problem danach behoben ist, war die Ursache ein veralteter Service-Worker-Cache. Die neue Network-First-Strategie und der Versionsbump verhindern diese Situation bei zukünftigen Deploys.
 
 ---
 
