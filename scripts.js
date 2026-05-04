@@ -141,6 +141,9 @@ translations.de['nav-overview'] = "Übersicht";
 translations.de['nav-assets'] = "Assets verwalten";
 translations.de['singleswap-settings-title'] = "Weitere Aktionen";
 translations.de['to-overview-button'] = "zur Übersicht";
+translations.de['appearance-settings-title'] = "Darstellung";
+translations.de['appearance-surface-toggle-label'] = "Alternative Box-Optik";
+translations.de['appearance-surface-toggle-hint'] = "Übernimmt die weichere Pagination-Optik für Karten und Boxen.";
 translations.de['settings-placeholder'] = "Einstellungsmenü folgt.";
 translations.de['overview-heading'] = "Übersicht";
 translations.de['overview-search-title'] = "Fälle durchsuchen";
@@ -185,6 +188,9 @@ translations.en['nav-overview'] = "Overview";
 translations.en['nav-assets'] = "Manage Assets";
 translations.en['singleswap-settings-title'] = "More Actions";
 translations.en['to-overview-button'] = "To Overview";
+translations.en['appearance-settings-title'] = "Appearance";
+translations.en['appearance-surface-toggle-label'] = "Alternative panel style";
+translations.en['appearance-surface-toggle-hint'] = "Apply the softer pagination look to cards and panels.";
 translations.en['settings-placeholder'] = "Settings menu coming soon.";
 translations.en['overview-heading'] = "Overview";
 translations.en['overview-search-title'] = "Search Cases";
@@ -246,11 +252,14 @@ translations.en['export-format-ods'] = 'LibreOffice (.ods)';
 translations.en['export-format-missing-lib'] = 'Export as XLSX/ODS unavailable: XLSX library missing.';
 
 const INVENTORY_DB_NAME = 'MDMTool_Inventory';
-const INVENTORY_DB_VERSION = 3;
+const INVENTORY_DB_VERSION = 4;
 const INVENTORY_STORE = 'assets_inventory';
+const INVENTORY_DEFAULTS_STORE = 'inventory_defaults';
 const INVENTORY_MONTHLY_STORE = 'monthly_inventory_movements';
+const INVENTORY_REQUIRED_STORES = [INVENTORY_STORE, INVENTORY_DEFAULTS_STORE, INVENTORY_MONTHLY_STORE];
 const MANAGED_DEVICE_TYPES_KEY = 'mdmtool_managed_device_types_v1';
 const MANAGED_MODELS_KEY = 'mdmtool_managed_models_v1';
+const SURFACE_STYLE_STORAGE_KEY = 'surfaceStyle';
 const DEFAULT_DEVICE_TYPES = ['iPhone', 'iPad', 'MacBook'];
 const CANONICAL_DEVICE_TYPE_MAP = {
     iphone: 'iPhone',
@@ -330,19 +339,62 @@ function getIpadReturnMessageText() {
 }
 
 function openInventoryDbForAssets() {
+    function ensureStores(db) {
+        return INVENTORY_REQUIRED_STORES.every((storeName) => db.objectStoreNames.contains(storeName));
+    }
+
+    function createMissingStores(db) {
+        if (!db.objectStoreNames.contains(INVENTORY_STORE)) {
+            db.createObjectStore(INVENTORY_STORE, { keyPath: 'assetidKey' });
+        }
+        if (!db.objectStoreNames.contains(INVENTORY_DEFAULTS_STORE)) {
+            db.createObjectStore(INVENTORY_DEFAULTS_STORE, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(INVENTORY_MONTHLY_STORE)) {
+            db.createObjectStore(INVENTORY_MONTHLY_STORE, { keyPath: 'id' });
+        }
+    }
+
+    function repairInventoryDb(version) {
+        return new Promise((resolve, reject) => {
+            const repairRequest = indexedDB.open(INVENTORY_DB_NAME, version);
+            repairRequest.onerror = () => reject(repairRequest.error);
+            repairRequest.onblocked = () => reject(new Error('Inventory database upgrade blocked by another open tab.'));
+            repairRequest.onupgradeneeded = () => {
+                createMissingStores(repairRequest.result);
+            };
+            repairRequest.onsuccess = () => {
+                repairRequest.result.close();
+                resolve();
+            };
+        });
+    }
+
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(INVENTORY_DB_NAME, INVENTORY_DB_VERSION);
         request.onerror = () => reject(request.error);
+        request.onblocked = () => reject(new Error('Inventory database upgrade blocked by another open tab.'));
         request.onupgradeneeded = () => {
+            createMissingStores(request.result);
+        };
+        request.onsuccess = async () => {
             const db = request.result;
-            if (!db.objectStoreNames.contains(INVENTORY_STORE)) {
-                db.createObjectStore(INVENTORY_STORE, { keyPath: 'assetidKey' });
+            if (ensureStores(db)) {
+                resolve(db);
+                return;
             }
-            if (!db.objectStoreNames.contains(INVENTORY_MONTHLY_STORE)) {
-                db.createObjectStore(INVENTORY_MONTHLY_STORE, { keyPath: 'id' });
+
+            const repairVersion = Math.max(Number(db.version || 0) + 1, INVENTORY_DB_VERSION + 1);
+            db.close();
+
+            try {
+                await repairInventoryDb(repairVersion);
+                const repairedDb = await openInventoryDbForAssets();
+                resolve(repairedDb);
+            } catch (error) {
+                reject(error);
             }
         };
-        request.onsuccess = () => resolve(request.result);
     });
 }
 
@@ -394,7 +446,19 @@ function normalizeModelToken(value) {
     return String(value || '')
         .trim()
         .toLowerCase()
+        .replace(/[_-]+/g, ' ')
+        .replace(/([a-z])([0-9])/g, '$1 $2')
+        .replace(/([0-9])([a-z])/g, '$1 $2')
         .replace(/\s+/g, ' ');
+}
+
+function formatCanonicalModelLabel(value) {
+    return String(value || '')
+        .trim()
+        .replace(/\s+/g, ' ')
+        .replace(/(^|[\s(_-])iphone(?=$|[\s)_-]|\d)/gi, (match, prefix) => `${prefix}iPhone`)
+        .replace(/(^|[\s(_-])ipad(?=$|[\s)_-]|\d)/gi, (match, prefix) => `${prefix}iPad`)
+        .replace(/(^|[\s(_-])macbook(?=$|[\s)_-]|\d)/gi, (match, prefix) => `${prefix}MacBook`);
 }
 
 function loadManagedModels() {
@@ -409,7 +473,7 @@ function loadManagedModels() {
         const output = [];
         parsed.forEach((entry) => {
             const type = canonicalDeviceTypeName(entry?.type);
-            const name = String(entry?.name || '').trim();
+            const name = formatCanonicalModelLabel(entry?.name);
             if (!type || !name) {
                 return;
             }
@@ -462,8 +526,8 @@ function buildAssetOptionLabel(asset) {
 function findMatchingInventoryAsset(assetId, deviceType, deviceVersion) {
     return inventoryAssets.find((asset) => {
         return normalizeInventoryValue(asset.assetid) === normalizeInventoryValue(assetId)
-            && normalizeInventoryValue(asset.type) === normalizeInventoryValue(deviceType)
-            && normalizeInventoryValue(asset.version) === normalizeInventoryValue(deviceVersion);
+            && normalizeTypeToken(asset.type) === normalizeTypeToken(deviceType)
+            && normalizeModelToken(asset.version) === normalizeModelToken(deviceVersion);
     }) || null;
 }
 
@@ -486,10 +550,10 @@ function syncNewSerialNumberFromInventory() {
     serialInput.value = matchingAsset?.serialnumber || '';
 }
 
-function updateNewAssetIdOptions(preferredValue = '') {
-    const typeSelect = document.getElementById('new-type');
-    const versionSelect = document.getElementById('new-version');
-    const assetSelect = document.getElementById('new-assetid');
+function updateInventoryAssetOptions(targetPrefix, preferredValue = '') {
+    const typeSelect = document.getElementById(`${targetPrefix}-type`);
+    const versionSelect = document.getElementById(`${targetPrefix}-version`);
+    const assetSelect = document.getElementById(`${targetPrefix}-assetid`);
 
     if (!typeSelect || !versionSelect || !assetSelect) {
         return;
@@ -498,6 +562,7 @@ function updateNewAssetIdOptions(preferredValue = '') {
     const selectedType = typeSelect.value;
     const selectedVersion = versionSelect.value;
     const currentValue = preferredValue || assetSelect.value;
+    const syncSerialNumber = syncNewSerialNumberFromInventory;
 
     assetSelect.innerHTML = '';
 
@@ -507,7 +572,7 @@ function updateNewAssetIdOptions(preferredValue = '') {
         option.textContent = translations[currentLanguage][labelKey] || '';
         assetSelect.appendChild(option);
         assetSelect.value = '';
-        syncNewSerialNumberFromInventory();
+        syncSerialNumber();
     };
 
     if (!selectedType || !selectedVersion) {
@@ -518,8 +583,8 @@ function updateNewAssetIdOptions(preferredValue = '') {
 
     const matchingAssets = inventoryAssets
         .filter((asset) => {
-            return normalizeInventoryValue(asset.type) === normalizeInventoryValue(selectedType)
-                && normalizeInventoryValue(asset.version) === normalizeInventoryValue(selectedVersion)
+            return normalizeTypeToken(asset.type) === normalizeTypeToken(selectedType)
+                && normalizeModelToken(asset.version) === normalizeModelToken(selectedVersion)
                 && String(asset.assetid || '').trim() !== '';
         })
         .sort((left, right) => String(left.assetid).localeCompare(String(right.assetid)));
@@ -550,7 +615,11 @@ function updateNewAssetIdOptions(preferredValue = '') {
         assetSelect.value = '';
     }
 
-    syncNewSerialNumberFromInventory();
+    syncSerialNumber();
+}
+
+function updateNewAssetIdOptions(preferredValue = '') {
+    updateInventoryAssetOptions('new', preferredValue);
 }
 
 async function loadInventoryAssets() {
@@ -564,7 +633,13 @@ async function loadInventoryAssets() {
             request.onsuccess = () => resolve(request.result || []);
         });
         inventoryDb.close();
-        inventoryAssets = Array.isArray(assets) ? assets : [];
+        inventoryAssets = Array.isArray(assets)
+            ? assets.map((asset) => ({
+                ...asset,
+                type: canonicalDeviceTypeName(asset?.type),
+                version: formatCanonicalModelLabel(asset?.version)
+            }))
+            : [];
     } catch (error) {
         console.warn('Could not load inventory assets for new device selector.', error);
         inventoryAssets = [];
@@ -629,7 +704,60 @@ function setLanguage(lang) {
     renderTopbarBreadcrumb(lang);
 }
 
+function setSurfaceStyle(style) {
+    const nextStyle = style === 'pagination' ? 'pagination' : 'classic';
+    document.documentElement.setAttribute('data-surface-style', nextStyle);
+    localStorage.setItem(SURFACE_STYLE_STORAGE_KEY, nextStyle);
+
+    const toggle = document.getElementById('appearanceSurfaceToggle');
+    if (toggle) {
+        toggle.checked = nextStyle === 'pagination';
+    }
+}
+
+function ensureAppearanceSettings() {
+    const settingsMenu = document.getElementById('settings-menu');
+    if (!settingsMenu) {
+        return;
+    }
+
+    let host = settingsMenu.querySelector('.asset-settings-panel');
+    if (!host) {
+        settingsMenu.innerHTML = '';
+        host = document.createElement('div');
+        host.className = 'asset-settings-panel common-settings-panel';
+        settingsMenu.appendChild(host);
+    } else {
+        settingsMenu.querySelector('[data-i18n="settings-placeholder"]')?.remove();
+    }
+
+    if (host.querySelector('#appearanceSettingsSection')) {
+        return;
+    }
+
+    const section = document.createElement('section');
+    section.id = 'appearanceSettingsSection';
+    section.className = 'asset-settings-section appearance-settings-section';
+    section.innerHTML = `
+        <h3 data-i18n="appearance-settings-title">Darstellung</h3>
+        <label class="appearance-toggle-row" for="appearanceSurfaceToggle">
+            <input id="appearanceSurfaceToggle" class="appearance-toggle-input" type="checkbox">
+            <span data-i18n="appearance-surface-toggle-label">Alternative Box-Optik</span>
+        </label>
+        <p class="appearance-settings-hint" data-i18n="appearance-surface-toggle-hint">Übernimmt die weichere Pagination-Optik für Karten und Boxen.</p>
+    `;
+    host.prepend(section);
+
+    const toggle = section.querySelector('#appearanceSurfaceToggle');
+    if (toggle) {
+        toggle.addEventListener('change', () => {
+            setSurfaceStyle(toggle.checked ? 'pagination' : 'classic');
+        });
+    }
+}
+
 // Lade gespeicherte Sprache
+ensureAppearanceSettings();
 const savedLanguage = localStorage.getItem('language');
 setLanguage(savedLanguage || currentLanguage);
 
@@ -637,8 +765,10 @@ setLanguage(savedLanguage || currentLanguage);
 const themeToggle = document.getElementById('theme-toggle');
 const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
 let currentTheme = localStorage.getItem('theme') || (prefersDarkScheme.matches ? 'dark' : 'light');
+const initialSurfaceStyle = localStorage.getItem(SURFACE_STYLE_STORAGE_KEY) || 'classic';
 
 document.documentElement.setAttribute('data-theme', currentTheme);
+setSurfaceStyle(initialSurfaceStyle);
 themeToggle.innerHTML = currentTheme === 'light' ? '🌙' : '☀️';
 
 themeToggle.addEventListener('click', () => {
@@ -714,6 +844,20 @@ document.addEventListener('click', (event) => {
 
     if (!settingsMenu.contains(event.target) && event.target !== settingsToggle) {
         settingsMenu.classList.add('hidden');
+    }
+});
+
+window.addEventListener('storage', (event) => {
+    if (event.key === 'theme' && event.newValue) {
+        currentTheme = event.newValue;
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        themeToggle.innerHTML = currentTheme === 'light' ? '🌙' : '☀️';
+    }
+    if (event.key === 'language' && event.newValue) {
+        setLanguage(event.newValue);
+    }
+    if (event.key === SURFACE_STYLE_STORAGE_KEY) {
+        setSurfaceStyle(event.newValue || 'classic');
     }
 });
 
@@ -2986,15 +3130,15 @@ function refreshAllVersionFilters() {
 }
 
 function getInventoryModelsForType(typeName) {
-    const selectedTypeKey = normalizeInventoryValue(typeName);
+    const selectedTypeKey = normalizeTypeToken(typeName);
     if (!selectedTypeKey) {
         return [];
     }
 
     return Array.from(new Set(
         inventoryAssets
-            .filter((asset) => normalizeInventoryValue(asset.type) === selectedTypeKey)
-            .map((asset) => String(asset.version || '').trim())
+            .filter((asset) => normalizeTypeToken(asset.type) === selectedTypeKey)
+            .map((asset) => formatCanonicalModelLabel(asset.version))
             .filter((value) => !!value)
     )).sort((left, right) => left.localeCompare(right, undefined, { sensitivity: 'base' }));
 }
@@ -3022,16 +3166,16 @@ function filterVersionOptions(typeSelectId, versionSelectId) {
             }
         });
 
-        const valuesInSelect = new Set(Array.from(versionSelect.options).map((option) => normalizeInventoryValue(option.value)));
+        const valuesInSelect = new Set(Array.from(versionSelect.options).map((option) => normalizeModelToken(option.value)));
         const dynamicModels = selectedType ? getInventoryModelsForType(selectedType) : [];
         const managedModels = selectedType
             ? loadManagedModels()
-                .filter((entry) => normalizeInventoryValue(entry.type) === normalizeInventoryValue(selectedType))
+                .filter((entry) => normalizeTypeToken(entry.type) === normalizeTypeToken(selectedType))
                 .map((entry) => entry.name)
             : [];
 
         managedModels.forEach((model) => {
-            if (valuesInSelect.has(normalizeInventoryValue(model))) {
+            if (valuesInSelect.has(normalizeModelToken(model))) {
                 return;
             }
 
@@ -3041,11 +3185,11 @@ function filterVersionOptions(typeSelectId, versionSelectId) {
             option.setAttribute('data-type', selectedType);
             option.setAttribute('data-managed-model-version', '1');
             versionSelect.appendChild(option);
-            valuesInSelect.add(normalizeInventoryValue(model));
+            valuesInSelect.add(normalizeModelToken(model));
         });
 
         dynamicModels.forEach((model) => {
-            if (valuesInSelect.has(normalizeInventoryValue(model))) {
+            if (valuesInSelect.has(normalizeModelToken(model))) {
                 return;
             }
 
@@ -3055,7 +3199,7 @@ function filterVersionOptions(typeSelectId, versionSelectId) {
             option.setAttribute('data-type', selectedType);
             option.setAttribute('data-dynamic-version', '1');
             versionSelect.appendChild(option);
-            valuesInSelect.add(normalizeInventoryValue(model));
+            valuesInSelect.add(normalizeModelToken(model));
         });
 
         const visibleOptions = Array.from(versionSelect.options).filter((option) => option.value !== '' && !option.hidden);
@@ -3068,9 +3212,14 @@ function filterVersionOptions(typeSelectId, versionSelectId) {
             versionSelect.appendChild(fallbackOption);
         }
         
-        const stillExists = Array.from(versionSelect.options).some((option) => option.value === currentValue && !option.hidden);
-        if (currentValue && stillExists) {
+        const exactMatch = Array.from(versionSelect.options).find((option) => option.value === currentValue && !option.hidden);
+        const normalizedMatch = Array.from(versionSelect.options).find((option) => (
+            !option.hidden && normalizeModelToken(option.value) === normalizeModelToken(currentValue)
+        ));
+        if (currentValue && exactMatch) {
             versionSelect.value = currentValue;
+        } else if (currentValue && normalizedMatch) {
+            versionSelect.value = normalizedMatch.value;
         } else {
             versionSelect.value = '';
         }
@@ -3125,4 +3274,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     applyIpadNoReplacementFormState();
+});
+
+window.addEventListener('focus', () => {
+    loadInventoryAssets();
+});
+
+window.addEventListener('storage', (event) => {
+    if (event.key === MANAGED_DEVICE_TYPES_KEY || event.key === MANAGED_MODELS_KEY) {
+        syncManagedTypeOptions();
+        refreshAllVersionFilters();
+        updateNewAssetIdOptions();
+    }
 });

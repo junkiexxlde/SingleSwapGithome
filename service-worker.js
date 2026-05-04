@@ -1,6 +1,6 @@
 // Increment SW_VERSION with every deployment.
 // Keep in sync with APP_VERSION in app-version.js.
-const SW_VERSION = '016';
+const SW_VERSION = '018';
 const CACHE_NAME = `mdwmt-v${SW_VERSION}`;
 
 const APP_SHELL = [

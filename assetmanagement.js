@@ -1,5 +1,5 @@
 const INVENTORY_DB_NAME = 'MDMTool_Inventory';
-const INVENTORY_DB_VERSION = 3;
+const INVENTORY_DB_VERSION = 4;
 const INVENTORY_STORE = 'assets_inventory';
 const INVENTORY_DEFAULTS_STORE = 'inventory_defaults';
 const INVENTORY_MONTHLY_STORE = 'monthly_inventory_movements';
@@ -46,6 +46,7 @@ const DEFAULT_INVENTORY_DEFAULTS = {
     managedby: 'Jane Doe',
     costcenter: '1234'
 };
+const INVENTORY_REQUIRED_STORES = [INVENTORY_STORE, INVENTORY_DEFAULTS_STORE, INVENTORY_MONTHLY_STORE];
 
 // Mirrors the selectable versions and data-type mapping from singleswap.html.
 const VERSION_DEVICE_TYPE_MAP = {
@@ -66,7 +67,7 @@ let assetRows = [];
 let selectedFile = null;
 let lastValidationReport = [];
 let currentPage = 1;
-const PAGE_SIZE = 10;
+let pageSize = 10;
 let inventoryDefaults = { ...DEFAULT_INVENTORY_DEFAULTS };
 let managedDeviceTypes = [...DEFAULT_DEVICE_TYPES];
 let managedModels = [];
@@ -170,6 +171,7 @@ function sanitizeRow(row) {
     });
 
     clean.type = canonicalStoredDeviceType(clean.type);
+    clean.version = canonicalModelName(clean.version, clean.type);
 
     Object.keys(row || {}).forEach((key) => {
         if (reservedKeys.has(key)) {
@@ -261,24 +263,36 @@ function persistManagedDeviceTypes() {
     localStorage.setItem(MANAGED_DEVICE_TYPES_KEY, JSON.stringify(managedDeviceTypes));
 }
 
+function formatCanonicalModelLabel(value) {
+    return String(value || '')
+        .trim()
+        .replace(/\s+/g, ' ')
+        .replace(/(^|[\s(_-])iphone(?=$|[\s)_-]|\d)/gi, (match, prefix) => `${prefix}iPhone`)
+        .replace(/(^|[\s(_-])ipad(?=$|[\s)_-]|\d)/gi, (match, prefix) => `${prefix}iPad`)
+        .replace(/(^|[\s(_-])macbook(?=$|[\s)_-]|\d)/gi, (match, prefix) => `${prefix}MacBook`);
+}
+
 function normalizeModelValue(value) {
     return String(value || '')
         .trim()
         .toLowerCase()
+        .replace(/[_-]+/g, ' ')
+        .replace(/([a-z])([0-9])/g, '$1 $2')
+        .replace(/([0-9])([a-z])/g, '$1 $2')
         .replace(/\s+/g, ' ');
 }
 
+function canonicalModelName(value, type = '') {
+    return formatCanonicalModelLabel(value);
+}
+
 function sanitizeManagedModelName(value) {
-    return String(value || '').trim();
+    return formatCanonicalModelLabel(value);
 }
 
 function getDefaultManagedModels() {
     return Object.entries(VERSION_DEVICE_TYPE_MAP).map(([versionKey, typeName]) => {
-        const label = versionKey
-            .split(' ')
-            .map((part) => (part.length > 0 ? part[0].toUpperCase() + part.slice(1) : part))
-            .join(' ');
-        return { name: label, type: typeName };
+        return { name: formatCanonicalModelLabel(versionKey), type: typeName };
     });
 }
 
@@ -287,7 +301,7 @@ function uniqueSortedModels(modelRows) {
     const output = [];
 
     modelRows.forEach((entry) => {
-        const cleanName = sanitizeManagedModelName(entry?.name);
+        const cleanName = canonicalModelName(entry?.name, entry?.type);
         const cleanType = canonicalDeviceType(entry?.type);
         if (!cleanName || !cleanType) {
             return;
@@ -354,6 +368,15 @@ function escapeHtml(value) {
 function showStatus(message, isError = false) {
     statusBox.textContent = message;
     statusBox.style.background = isError ? 'rgba(180, 73, 73, 0.14)' : 'rgba(52, 73, 99, 0.08)';
+}
+
+function clearImportFeedback() {
+    renderValidationReport([]);
+    showStatus('');
+}
+
+function getCurrentSelectedFile() {
+    return fileInput?.files && fileInput.files[0] ? fileInput.files[0] : null;
 }
 
 function normalizeFilterValue(value) {
@@ -437,11 +460,11 @@ function resetToFirstPage() {
 }
 
 function getPaginationState(totalRows) {
-    const totalPages = Math.max(1, Math.ceil(totalRows / PAGE_SIZE));
+    const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
     currentPage = Math.min(Math.max(1, currentPage), totalPages);
 
-    const startIndex = (currentPage - 1) * PAGE_SIZE;
-    const endIndex = Math.min(startIndex + PAGE_SIZE, totalRows);
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = Math.min(startIndex + pageSize, totalRows);
 
     return {
         totalPages,
@@ -450,12 +473,41 @@ function getPaginationState(totalRows) {
     };
 }
 
+function getVisiblePaginationItems(totalPages) {
+    if (totalPages <= 7) {
+        return Array.from({ length: totalPages }, (_, index) => index + 1);
+    }
+
+    const items = new Set([1, totalPages, currentPage, currentPage - 1, currentPage + 1]);
+    if (currentPage <= 3) {
+        items.add(2);
+        items.add(3);
+        items.add(4);
+    }
+    if (currentPage >= totalPages - 2) {
+        items.add(totalPages - 1);
+        items.add(totalPages - 2);
+        items.add(totalPages - 3);
+    }
+
+    return Array.from(items)
+        .filter((page) => page >= 1 && page <= totalPages)
+        .sort((left, right) => left - right)
+        .reduce((acc, page, index, pages) => {
+            if (index > 0 && page - pages[index - 1] > 1) {
+                acc.push('ellipsis');
+            }
+            acc.push(page);
+            return acc;
+        }, []);
+}
+
 function renderPagination(totalRows) {
     if (!assetPagination || !assetPaginationInfo || !assetPaginationPages) {
         return;
     }
 
-    if (totalRows <= PAGE_SIZE) {
+    if (totalRows <= pageSize) {
         assetPagination.classList.add('hidden');
         assetPaginationInfo.textContent = '';
         assetPaginationPages.innerHTML = '';
@@ -463,17 +515,38 @@ function renderPagination(totalRows) {
     }
 
     const { totalPages, startIndex, endIndex } = getPaginationState(totalRows);
+    const visibleItems = getVisiblePaginationItems(totalPages);
     assetPagination.classList.remove('hidden');
     assetPaginationInfo.textContent = t(
         `Zeige ${startIndex + 1}–${endIndex} von ${totalRows} Einträgen`,
         `Showing ${startIndex + 1}-${endIndex} of ${totalRows} entries`
     );
 
-    assetPaginationPages.innerHTML = Array.from({ length: totalPages }, (_, index) => {
-        const page = index + 1;
-        const activeClass = page === currentPage ? ' active' : '';
-        return `<button type="button" class="button secondary asset-page-button${activeClass}" data-page="${page}">${page}</button>`;
+    const previousLabel = t('Vorherige', 'Previous');
+    const nextLabel = t('Nächste', 'Next');
+    const perPageLabel = t('/ Seite', '/ page');
+
+    const pageButtons = visibleItems.map((item) => {
+        if (item === 'ellipsis') {
+            return '<span class="asset-pagination-ellipsis" aria-hidden="true">…</span>';
+        }
+
+        const activeClass = item === currentPage ? ' active' : '';
+        return `<button type="button" class="asset-page-button${activeClass}" data-page="${item}" aria-current="${item === currentPage ? 'page' : 'false'}">${item}</button>`;
     }).join('');
+
+    assetPaginationPages.innerHTML = `
+        <div class="asset-pagination-bar">
+            <button type="button" class="asset-pagination-nav" data-page-nav="prev" ${currentPage === 1 ? 'disabled' : ''}>${escapeHtml(previousLabel)}</button>
+            <div class="asset-pagination-numbers" aria-label="Pagination Pages">${pageButtons}</div>
+            <button type="button" class="asset-pagination-nav" data-page-nav="next" ${currentPage === totalPages ? 'disabled' : ''}>${escapeHtml(nextLabel)}</button>
+            <label class="asset-pagination-size-label" for="assetPageSizeSelect">
+                <select id="assetPageSizeSelect" class="asset-page-size-select" aria-label="Page size">
+                    ${[10, 20, 50].map((size) => `<option value="${size}" ${size === pageSize ? 'selected' : ''}>${size} ${escapeHtml(perPageLabel)}</option>`).join('')}
+                </select>
+            </label>
+        </div>
+    `;
 }
 
 function renderTable() {
@@ -1526,23 +1599,63 @@ function exportRows() {
 }
 
 function openInventoryDb() {
+    function ensureStores(db) {
+        return INVENTORY_REQUIRED_STORES.every((storeName) => db.objectStoreNames.contains(storeName));
+    }
+
+    function createMissingStores(db) {
+        if (!db.objectStoreNames.contains(INVENTORY_STORE)) {
+            db.createObjectStore(INVENTORY_STORE, { keyPath: 'assetidKey' });
+        }
+        if (!db.objectStoreNames.contains(INVENTORY_DEFAULTS_STORE)) {
+            db.createObjectStore(INVENTORY_DEFAULTS_STORE, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(INVENTORY_MONTHLY_STORE)) {
+            db.createObjectStore(INVENTORY_MONTHLY_STORE, { keyPath: 'id' });
+        }
+    }
+
+    function repairInventoryDb(version) {
+        return new Promise((resolve, reject) => {
+            const repairRequest = indexedDB.open(INVENTORY_DB_NAME, version);
+            repairRequest.onerror = () => reject(repairRequest.error);
+            repairRequest.onblocked = () => reject(new Error('Inventory database upgrade blocked by another open tab.'));
+            repairRequest.onupgradeneeded = () => {
+                createMissingStores(repairRequest.result);
+            };
+            repairRequest.onsuccess = () => {
+                repairRequest.result.close();
+                resolve();
+            };
+        });
+    }
+
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(INVENTORY_DB_NAME, INVENTORY_DB_VERSION);
 
         request.onerror = () => reject(request.error);
+        request.onblocked = () => reject(new Error('Inventory database upgrade blocked by another open tab.'));
         request.onupgradeneeded = () => {
+            createMissingStores(request.result);
+        };
+        request.onsuccess = async () => {
             const db = request.result;
-            if (!db.objectStoreNames.contains(INVENTORY_STORE)) {
-                db.createObjectStore(INVENTORY_STORE, { keyPath: 'assetidKey' });
+            if (ensureStores(db)) {
+                resolve(db);
+                return;
             }
-            if (!db.objectStoreNames.contains(INVENTORY_DEFAULTS_STORE)) {
-                db.createObjectStore(INVENTORY_DEFAULTS_STORE, { keyPath: 'id' });
-            }
-            if (!db.objectStoreNames.contains(INVENTORY_MONTHLY_STORE)) {
-                db.createObjectStore(INVENTORY_MONTHLY_STORE, { keyPath: 'id' });
+
+            const repairVersion = Math.max(Number(db.version || 0) + 1, INVENTORY_DB_VERSION + 1);
+            db.close();
+
+            try {
+                await repairInventoryDb(repairVersion);
+                const repairedDb = await openInventoryDb();
+                resolve(repairedDb);
+            } catch (error) {
+                reject(error);
             }
         };
-        request.onsuccess = () => resolve(request.result);
     });
 }
 
@@ -1674,8 +1787,11 @@ async function bootstrapRowsAndDefaults() {
         });
 
         const rows = records.map((record) => sanitizeRow(record));
-        const requiresCanonicalTypeSync = records.some((record, index) => String(record?.type || '').trim() !== rows[index].type);
-        if (requiresCanonicalTypeSync) {
+        const requiresCanonicalSync = records.some((record, index) => (
+            String(record?.type || '').trim() !== rows[index].type
+            || String(record?.version || '').trim() !== rows[index].version
+        ));
+        if (requiresCanonicalSync) {
             await persistCanonicalInventoryRows(db, rows);
         }
 
@@ -1698,7 +1814,8 @@ async function bootstrapRowsAndDefaults() {
                     ? t('Lagerliste geladen.', 'Inventory list loaded.')
                     : t('Noch keine Assets in der Lagerliste vorhanden.', 'No assets in inventory list yet.'))
         );
-    } catch {
+    } catch (error) {
+        console.error('Asset inventory bootstrap failed:', error);
         assetRows = [];
         inventoryDefaults = { ...DEFAULT_INVENTORY_DEFAULTS };
         refreshFilterOptions();
@@ -1873,21 +1990,25 @@ function bindEvents() {
     pickFileButton.addEventListener('click', () => fileInput.click());
 
     fileInput.addEventListener('change', () => {
-        selectedFile = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+        selectedFile = getCurrentSelectedFile();
         if (selectedFile) {
             showStatus(t(`Datei ausgewaehlt: ${selectedFile.name}`, `Selected file: ${selectedFile.name}`));
         }
     });
 
     importButton.addEventListener('click', async () => {
-        if (!selectedFile) {
+        const file = getCurrentSelectedFile();
+        selectedFile = file;
+
+        if (!file) {
             showStatus(t('Bitte zuerst eine Datei auswaehlen.', 'Please choose a file first.'), true);
             return;
         }
 
         try {
-            await importFile(selectedFile);
-        } catch {
+            await importFile(file);
+        } catch (error) {
+            console.error('Asset import failed:', error);
             showStatus(t('Import fehlgeschlagen. Datei pruefen.', 'Import failed. Please check the file.'), true);
         }
     });
@@ -1914,7 +2035,7 @@ function bindEvents() {
 
     if (validationRefreshButton) {
         validationRefreshButton.addEventListener('click', () => {
-            window.location.reload();
+            clearImportFeedback();
         });
     }
 
@@ -1960,16 +2081,45 @@ function bindEvents() {
     if (assetPaginationPages) {
         assetPaginationPages.addEventListener('click', (event) => {
             const button = event.target.closest('[data-page]');
-            if (!button) {
+            if (button) {
+                const page = Number(button.getAttribute('data-page'));
+                if (!Number.isFinite(page) || page < 1) {
+                    return;
+                }
+
+                currentPage = page;
+                renderTable();
                 return;
             }
 
-            const page = Number(button.getAttribute('data-page'));
-            if (!Number.isFinite(page) || page < 1) {
+            const navButton = event.target.closest('[data-page-nav]');
+            if (!navButton) {
                 return;
             }
 
-            currentPage = page;
+            const direction = navButton.getAttribute('data-page-nav');
+            if (direction === 'prev' && currentPage > 1) {
+                currentPage -= 1;
+            }
+            if (direction === 'next') {
+                currentPage += 1;
+            }
+            renderTable();
+        });
+
+        assetPaginationPages.addEventListener('change', (event) => {
+            const select = event.target.closest('#assetPageSizeSelect');
+            if (!select) {
+                return;
+            }
+
+            const nextPageSize = Number(select.value);
+            if (!Number.isFinite(nextPageSize) || nextPageSize < 1) {
+                return;
+            }
+
+            pageSize = nextPageSize;
+            currentPage = 1;
             renderTable();
         });
     }

@@ -1,11 +1,32 @@
 const INVENTORY_DB_NAME = 'MDMTool_Inventory';
-const INVENTORY_DB_VERSION = 3;
+const INVENTORY_DB_VERSION = 4;
 const INVENTORY_STORE = 'assets_inventory';
+const INVENTORY_DEFAULTS_STORE = 'inventory_defaults';
 const INVENTORY_MONTHLY_STORE = 'monthly_inventory_movements';
+const INVENTORY_REQUIRED_STORES = [INVENTORY_STORE, INVENTORY_DEFAULTS_STORE, INVENTORY_MONTHLY_STORE];
+const MANAGED_DEVICE_TYPES_KEY = 'mdmtool_managed_device_types_v1';
+const MANAGED_MODELS_KEY = 'mdmtool_managed_models_v1';
+const DEFAULT_DEVICE_TYPES = ['iPhone', 'iPad', 'MacBook'];
+const VERSION_DEVICE_TYPE_MAP = {
+    'iphone se': 'iPhone',
+    'iphone 13': 'iPhone',
+    'iphone 15': 'iPhone',
+    'iphone 15 pro': 'iPhone',
+    'iphone 16e': 'iPhone',
+    'iphone 17': 'iPhone',
+    'ipad pro': 'iPad',
+    'ipad air': 'iPad',
+    'ipad mini': 'iPad',
+    'macbook air': 'MacBook',
+    'macbook pro': 'MacBook'
+};
 
 const typeSelect = document.getElementById('monthlyInventoryTypeSelect');
 const monthSelect = document.getElementById('monthlyInventoryMonthSelect');
-const statusBox = document.getElementById('monthlyInventoryStatus');
+const monthNativeWrap = document.getElementById('monthlyInventoryMonthNativeWrap');
+const monthFallback = document.getElementById('monthlyInventoryMonthFallback');
+const monthFallbackMonthSelect = document.getElementById('monthlyInventoryMonthFallbackMonth');
+const monthFallbackYearSelect = document.getElementById('monthlyInventoryMonthFallbackYear');
 const monthLabel = document.getElementById('monthlyInventoryMonthLabel');
 const settingsTitle = document.getElementById('monthlyInventorySettingsTitle');
 const modelTabs = document.getElementById('monthlyInventoryModelTabs');
@@ -24,6 +45,9 @@ const resetButton = document.getElementById('monthlyInventoryResetButton');
 let inventoryRows = [];
 let selectedType = '';
 let selectedModel = '';
+let managedDeviceTypes = [...DEFAULT_DEVICE_TYPES];
+let managedModels = [];
+let useMonthFallback = false;
 
 const translations = {
     de: {
@@ -31,6 +55,7 @@ const translations = {
         noData: 'Noch keine Assets in der Lagerliste vorhanden.',
         noTypes: 'Es sind keine Gerätetypen verfügbar.',
         noModels: 'Für den gewählten Gerätetyp sind keine Typen vorhanden.',
+        loadedRows: '{count} Inventardatensätze geladen.',
         settingsTitle: 'Manuelle Werte für {month}',
         saved: 'Monatswerte gespeichert.',
         reset: 'Monatswerte zurückgesetzt.',
@@ -44,6 +69,7 @@ const translations = {
         noData: 'No assets in the inventory list yet.',
         noTypes: 'No device types are available.',
         noModels: 'No models are available for the selected device type.',
+        loadedRows: '{count} inventory records loaded.',
         settingsTitle: 'Manual values for {month}',
         saved: 'Monthly values saved.',
         reset: 'Monthly values reset.',
@@ -80,10 +106,118 @@ function normalizeValue(value) {
     return String(value || '').trim().toLowerCase();
 }
 
+function normalizeTypeValue(value) {
+    return String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/^type[\s_-]*/g, '')
+        .replace(/[_\-\s]+/g, '');
+}
+
+function canonicalStoredDeviceType(value) {
+    const key = normalizeTypeValue(value);
+    if (key === 'iphone') {
+        return 'iPhone';
+    }
+    if (key === 'ipad') {
+        return 'iPad';
+    }
+    if (key === 'macbook') {
+        return 'MacBook';
+    }
+    return String(value || '').trim();
+}
+
+function uniqueSortedValues(values) {
+    return Array.from(new Set(values.filter((value) => !!String(value || '').trim())))
+        .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+}
+
+function normalizeModelValue(value) {
+    return String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[_-]+/g, ' ')
+        .replace(/([a-z])([0-9])/g, '$1 $2')
+        .replace(/([0-9])([a-z])/g, '$1 $2')
+        .replace(/\s+/g, ' ');
+}
+
+function formatCanonicalModelLabel(value) {
+    return String(value || '')
+        .trim()
+        .replace(/\s+/g, ' ')
+        .replace(/(^|[\s(_-])iphone(?=$|[\s)_-]|\d)/gi, (match, prefix) => `${prefix}iPhone`)
+        .replace(/(^|[\s(_-])ipad(?=$|[\s)_-]|\d)/gi, (match, prefix) => `${prefix}iPad`)
+        .replace(/(^|[\s(_-])macbook(?=$|[\s)_-]|\d)/gi, (match, prefix) => `${prefix}MacBook`);
+}
+
+function canonicalModelName(value, type = '') {
+    return formatCanonicalModelLabel(value);
+}
+
+function getDefaultManagedModels() {
+    return Object.entries(VERSION_DEVICE_TYPE_MAP).map(([versionKey, typeName]) => {
+        return { name: formatCanonicalModelLabel(versionKey), type: typeName };
+    });
+}
+
+function uniqueSortedModels(modelRows) {
+    const seen = new Set();
+    const output = [];
+
+    modelRows.forEach((entry) => {
+        const cleanType = canonicalStoredDeviceType(entry?.type);
+        const cleanName = canonicalModelName(entry?.name, cleanType);
+        if (!cleanName || !cleanType) {
+            return;
+        }
+
+        const key = `${normalizeValue(cleanType)}::${normalizeModelValue(cleanName)}`;
+        if (seen.has(key)) {
+            return;
+        }
+
+        seen.add(key);
+        output.push({ name: cleanName, type: cleanType });
+    });
+
+    return output.sort((left, right) => {
+        const typeSort = left.type.localeCompare(right.type, undefined, { sensitivity: 'base' });
+        if (typeSort !== 0) {
+            return typeSort;
+        }
+        return left.name.localeCompare(right.name, undefined, { sensitivity: 'base' });
+    });
+}
+
+function loadManagedDeviceTypes() {
+    try {
+        const raw = localStorage.getItem(MANAGED_DEVICE_TYPES_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        managedDeviceTypes = uniqueSortedValues([...DEFAULT_DEVICE_TYPES, ...(Array.isArray(parsed) ? parsed : [])]);
+    } catch {
+        managedDeviceTypes = [...DEFAULT_DEVICE_TYPES];
+    }
+}
+
+function loadManagedModels() {
+    try {
+        const raw = localStorage.getItem(MANAGED_MODELS_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        managedModels = uniqueSortedModels([
+            ...getDefaultManagedModels(),
+            ...(Array.isArray(parsed) ? parsed : [])
+        ]);
+    } catch {
+        managedModels = uniqueSortedModels(getDefaultManagedModels());
+    }
+}
+
 function sanitizeRow(row) {
     return {
-        type: String(row?.type || '').trim(),
-        version: String(row?.version || '').trim(),
+        type: canonicalStoredDeviceType(row?.type),
+        version: canonicalModelName(row?.version, row?.type),
         assetid: String(row?.assetid || '').trim(),
         serialnumber: String(row?.serialnumber || '').trim()
     };
@@ -95,27 +229,135 @@ function sanitizeMovementValue(value) {
 }
 
 function showStatus(message, isError = false) {
-    if (!statusBox) {
-        return;
-    }
-
-    statusBox.textContent = message;
-    statusBox.style.background = isError ? 'rgba(180, 73, 73, 0.14)' : 'rgba(52, 73, 99, 0.08)';
+    void message;
+    void isError;
 }
 
 function getCurrentMonthKey() {
     return new Date().toISOString().slice(0, 7);
 }
 
+function normalizeMonthKey(monthKey) {
+    return /^\d{4}-\d{2}$/.test(String(monthKey || '')) ? String(monthKey) : getCurrentMonthKey();
+}
+
+function supportsMonthInput() {
+    const input = document.createElement('input');
+    input.setAttribute('type', 'month');
+    return input.type === 'month';
+}
+
+function buildMonthOptionLabel(monthNumber) {
+    const locale = getCurrentLanguage() === 'en' ? 'en-US' : 'de-DE';
+    const date = new Date(`2000-${String(monthNumber).padStart(2, '0')}-01T00:00:00`);
+    return new Intl.DateTimeFormat(locale, { month: 'long' }).format(date);
+}
+
+function ensureFallbackYearOptions(selectedYear) {
+    if (!monthFallbackYearSelect) {
+        return;
+    }
+
+    const numericSelectedYear = Number.parseInt(String(selectedYear || ''), 10);
+    const currentYear = new Date().getFullYear();
+    const anchorYear = Number.isFinite(numericSelectedYear) ? numericSelectedYear : currentYear;
+    const startYear = Math.min(currentYear, anchorYear) - 5;
+    const endYear = Math.max(currentYear, anchorYear) + 5;
+    const years = [];
+
+    for (let year = startYear; year <= endYear; year += 1) {
+        years.push(year);
+    }
+
+    monthFallbackYearSelect.innerHTML = years
+        .map((year) => `<option value="${year}">${year}</option>`)
+        .join('');
+}
+
+function populateFallbackMonthOptions() {
+    if (!monthFallbackMonthSelect) {
+        return;
+    }
+
+    monthFallbackMonthSelect.innerHTML = Array.from({ length: 12 }, (_, index) => {
+        const monthNumber = index + 1;
+        const value = String(monthNumber).padStart(2, '0');
+        return `<option value="${value}">${escapeHtml(buildMonthOptionLabel(monthNumber))}</option>`;
+    }).join('');
+}
+
+function syncFallbackFromMonthKey(monthKey) {
+    if (!monthFallbackMonthSelect || !monthFallbackYearSelect) {
+        return;
+    }
+
+    const safeMonthKey = normalizeMonthKey(monthKey);
+    const [year, month] = safeMonthKey.split('-');
+    populateFallbackMonthOptions();
+    ensureFallbackYearOptions(year);
+    monthFallbackMonthSelect.value = month;
+    monthFallbackYearSelect.value = year;
+}
+
+function getFallbackMonthKey() {
+    const year = monthFallbackYearSelect?.value || getCurrentMonthKey().slice(0, 4);
+    const month = monthFallbackMonthSelect?.value || getCurrentMonthKey().slice(5, 7);
+    return normalizeMonthKey(`${year}-${month}`);
+}
+
+function setSelectedMonthKey(monthKey) {
+    const safeMonthKey = normalizeMonthKey(monthKey);
+    if (useMonthFallback) {
+        syncFallbackFromMonthKey(safeMonthKey);
+        return;
+    }
+
+    if (monthSelect) {
+        monthSelect.value = safeMonthKey;
+    }
+}
+
 function getSelectedMonthKey() {
-    return monthSelect?.value || getCurrentMonthKey();
+    if (useMonthFallback) {
+        return getFallbackMonthKey();
+    }
+    return normalizeMonthKey(monthSelect?.value || getCurrentMonthKey());
 }
 
 function formatMonthKey(monthKey) {
     const locale = getCurrentLanguage() === 'en' ? 'en-US' : 'de-DE';
-    const safeMonthKey = /^\d{4}-\d{2}$/.test(String(monthKey || '')) ? String(monthKey) : getCurrentMonthKey();
+    const safeMonthKey = normalizeMonthKey(monthKey);
     const date = new Date(`${safeMonthKey}-01T00:00:00`);
     return new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(date);
+}
+
+function handleMonthSelectionChange() {
+    renderMonthLabel();
+    renderSettingsTitle();
+    void renderMetrics();
+}
+
+function initMonthPicker() {
+    if (!monthSelect) {
+        return;
+    }
+
+    useMonthFallback = !supportsMonthInput();
+
+    if (!useMonthFallback) {
+        monthSelect.setAttribute('type', 'month');
+        monthNativeWrap?.classList.remove('hidden');
+        monthFallback?.classList.add('hidden');
+        setSelectedMonthKey(getCurrentMonthKey());
+        return;
+    }
+
+    monthNativeWrap?.classList.add('hidden');
+    monthFallback?.classList.remove('hidden');
+    syncFallbackFromMonthKey(getCurrentMonthKey());
+
+    monthFallbackMonthSelect?.addEventListener('change', handleMonthSelectionChange);
+    monthFallbackYearSelect?.addEventListener('change', handleMonthSelectionChange);
 }
 
 function renderMonthLabel() {
@@ -182,49 +424,105 @@ function setMetricsDisabled(disabled) {
 }
 
 function openInventoryDb() {
+    function ensureStores(db) {
+        return INVENTORY_REQUIRED_STORES.every((storeName) => db.objectStoreNames.contains(storeName));
+    }
+
+    function createMissingStores(db) {
+        if (!db.objectStoreNames.contains(INVENTORY_STORE)) {
+            db.createObjectStore(INVENTORY_STORE, { keyPath: 'assetidKey' });
+        }
+        if (!db.objectStoreNames.contains(INVENTORY_DEFAULTS_STORE)) {
+            db.createObjectStore(INVENTORY_DEFAULTS_STORE, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(INVENTORY_MONTHLY_STORE)) {
+            db.createObjectStore(INVENTORY_MONTHLY_STORE, { keyPath: 'id' });
+        }
+    }
+
+    function repairInventoryDb(version) {
+        return new Promise((resolve, reject) => {
+            const repairRequest = indexedDB.open(INVENTORY_DB_NAME, version);
+            repairRequest.onerror = () => reject(repairRequest.error);
+            repairRequest.onblocked = () => reject(new Error('Inventory database upgrade blocked by another open tab.'));
+            repairRequest.onupgradeneeded = () => {
+                createMissingStores(repairRequest.result);
+            };
+            repairRequest.onsuccess = () => {
+                repairRequest.result.close();
+                resolve();
+            };
+        });
+    }
+
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(INVENTORY_DB_NAME, INVENTORY_DB_VERSION);
 
         request.onerror = () => reject(request.error);
+        request.onblocked = () => reject(new Error('Inventory database upgrade blocked by another open tab.'));
         request.onupgradeneeded = () => {
+            createMissingStores(request.result);
+        };
+        request.onsuccess = async () => {
             const db = request.result;
-            if (!db.objectStoreNames.contains(INVENTORY_STORE)) {
-                db.createObjectStore(INVENTORY_STORE, { keyPath: 'assetidKey' });
+            if (ensureStores(db)) {
+                resolve(db);
+                return;
             }
-            if (!db.objectStoreNames.contains(INVENTORY_MONTHLY_STORE)) {
-                db.createObjectStore(INVENTORY_MONTHLY_STORE, { keyPath: 'id' });
+
+            const repairVersion = Math.max(Number(db.version || 0) + 1, INVENTORY_DB_VERSION + 1);
+            db.close();
+
+            try {
+                await repairInventoryDb(repairVersion);
+                const repairedDb = await openInventoryDb();
+                resolve(repairedDb);
+            } catch (error) {
+                reject(error);
             }
         };
-        request.onsuccess = () => resolve(request.result);
     });
 }
 
 function buildUniqueValues(values) {
-    return Array.from(new Set(values.filter((value) => !!String(value || '').trim())))
-        .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    return uniqueSortedValues(values);
 }
 
 function getTypes() {
-    return buildUniqueValues(inventoryRows.map((row) => row.type));
+    const inventoryTypes = buildUniqueValues(inventoryRows.map((row) => row.type));
+    if (inventoryTypes.length > 0) {
+        return inventoryTypes;
+    }
+
+    return buildUniqueValues(managedDeviceTypes);
 }
 
 function getModelsForType(type) {
-    return buildUniqueValues(
-        inventoryRows
-            .filter((row) => normalizeValue(row.type) === normalizeValue(type))
-            .map((row) => row.version)
-    );
+    const inventoryModels = inventoryRows
+        .filter((row) => normalizeTypeValue(row.type) === normalizeTypeValue(type))
+        .map((row) => row.version);
+    const uniqueInventoryModels = buildUniqueValues(inventoryModels);
+
+    if (uniqueInventoryModels.length > 0) {
+        return uniqueInventoryModels;
+    }
+
+    const configuredModels = managedModels
+        .filter((entry) => normalizeTypeValue(entry?.type) === normalizeTypeValue(type))
+        .map((entry) => String(entry?.name || '').trim());
+
+    return buildUniqueValues(configuredModels);
 }
 
 function getModelTotal(type, model) {
     return inventoryRows.filter((row) => (
-        normalizeValue(row.type) === normalizeValue(type)
-        && normalizeValue(row.version) === normalizeValue(model)
+        normalizeTypeValue(row.type) === normalizeTypeValue(type)
+        && normalizeModelValue(row.version) === normalizeModelValue(model)
     )).length;
 }
 
 function getMovementRecordId(monthKey, type, model) {
-    return `${monthKey}::${normalizeValue(type)}::${normalizeValue(model)}`;
+    return `${monthKey}::${normalizeTypeValue(type)}::${normalizeModelValue(model)}`;
 }
 
 async function loadMovementSummaryBeforeMonth(monthKey, type, model) {
@@ -240,8 +538,8 @@ async function loadMovementSummaryBeforeMonth(monthKey, type, model) {
             request.onsuccess = () => {
                 const records = (request.result || []).filter((record) => (
                     String(record?.month || '') < monthKey
-                    && normalizeValue(record?.type) === normalizeValue(type)
-                    && normalizeValue(record?.model) === normalizeValue(model)
+                    && normalizeTypeValue(record?.type) === normalizeTypeValue(type)
+                    && normalizeModelValue(record?.model) === normalizeModelValue(model)
                 ));
 
                 const summary = records.reduce((acc, record) => {
@@ -340,7 +638,7 @@ function renderTypeOptions() {
         return;
     }
 
-    selectedType = types.some((type) => normalizeValue(type) === normalizeValue(previousType))
+    selectedType = types.some((type) => normalizeTypeValue(type) === normalizeTypeValue(previousType))
         ? previousType
         : types[0];
 
@@ -370,12 +668,12 @@ function renderModelTabs() {
         return;
     }
 
-    selectedModel = models.some((model) => normalizeValue(model) === normalizeValue(previousModel))
+    selectedModel = models.some((model) => normalizeModelValue(model) === normalizeModelValue(previousModel))
         ? previousModel
         : models[0];
 
     modelTabs.innerHTML = models.map((model) => {
-        const isActive = normalizeValue(model) === normalizeValue(selectedModel);
+        const isActive = normalizeModelValue(model) === normalizeModelValue(selectedModel);
         return `
             <button
                 type="button"
@@ -431,10 +729,10 @@ async function renderMetrics() {
 async function loadInventoryRows() {
     try {
         showStatus(t('loading'));
+        loadManagedDeviceTypes();
+        loadManagedModels();
 
-        if (monthSelect && !monthSelect.value) {
-            monthSelect.value = getCurrentMonthKey();
-        }
+        setSelectedMonthKey(getCurrentMonthKey());
 
         const db = await openInventoryDb();
         const rows = await new Promise((resolve, reject) => {
@@ -448,9 +746,11 @@ async function loadInventoryRows() {
 
         inventoryRows = rows;
         renderMonthLabel();
-    renderSettingsTitle();
+        renderSettingsTitle();
 
-        if (inventoryRows.length === 0) {
+        renderTypeOptions();
+
+        if (getTypes().length === 0) {
             typeSelect.innerHTML = '';
             modelTabs.innerHTML = '';
             modelTabs.classList.add('hidden');
@@ -460,8 +760,13 @@ async function loadInventoryRows() {
             return;
         }
 
-        renderTypeOptions();
         renderModelTabs();
+
+        if (inventoryRows.length === 0) {
+            showStatus(t('noData'), true);
+        } else {
+            showStatus(t('loadedRows', { count: inventoryRows.length }));
+        }
     } catch (error) {
         console.error('Error loading monthly inventory:', error);
         inventoryRows = [];
@@ -483,11 +788,7 @@ if (typeSelect) {
 }
 
 if (monthSelect) {
-    monthSelect.addEventListener('change', () => {
-        renderMonthLabel();
-        renderSettingsTitle();
-        void renderMetrics();
-    });
+    monthSelect.addEventListener('change', handleMonthSelectionChange);
 }
 
 if (modelTabs) {
@@ -552,6 +853,9 @@ if (incomingInput) {
 }
 
 document.addEventListener('mdm-language-changed', () => {
+    if (useMonthFallback) {
+        syncFallbackFromMonthKey(getSelectedMonthKey());
+    }
     renderMonthLabel();
     renderSettingsTitle();
     if (inventoryRows.length === 0) {
@@ -562,10 +866,7 @@ document.addEventListener('mdm-language-changed', () => {
     renderModelTabs();
 });
 
-if (monthSelect) {
-    monthSelect.value = getCurrentMonthKey();
-}
-
+initMonthPicker();
 renderMonthLabel();
 renderSettingsTitle();
 setMovementInputs(0, 0);

@@ -58,7 +58,13 @@
                 <div class="monthly-inventory-controls">
                     <div class="monthly-inventory-selector">
                         <label for="monthlyInventoryMonthSelect" data-i18n="monthly-inventory-month-label">Monat auswählen</label>
-                        <input id="monthlyInventoryMonthSelect" type="month">
+                        <div id="monthlyInventoryMonthNativeWrap">
+                            <input id="monthlyInventoryMonthSelect" type="text" inputmode="numeric" placeholder="YYYY-MM" aria-describedby="monthlyInventoryMonthLabel">
+                        </div>
+                        <div id="monthlyInventoryMonthFallback" class="monthly-inventory-month-fallback hidden">
+                            <select id="monthlyInventoryMonthFallbackMonth" aria-label="Monat auswählen"></select>
+                            <select id="monthlyInventoryMonthFallbackYear" aria-label="Jahr auswählen"></select>
+                        </div>
                     </div>
                     <div class="monthly-inventory-selector">
                         <label for="monthlyInventoryTypeSelect" data-i18n="monthly-inventory-type-label">Gerätetyp auswählen</label>

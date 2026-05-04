@@ -44,7 +44,7 @@ const navTranslations = {
         "asset-filter-reset": "Filter zurücksetzen",
         "asset-pagination-prev": "Vorherige 10",
         "asset-pagination-next": "Nächste 10",
-        "asset-validation-refresh": "Seite aktualisieren",
+        "asset-validation-refresh": "Importmeldungen löschen",
         "asset-settings-title": "Standardwerte",
         "asset-default-assigned-label": "Zugewiesen",
         "asset-default-assigned-placeholder": "z. B. Team Support",
@@ -60,6 +60,9 @@ const navTranslations = {
         "nav-overview": "Übersicht",
         "nav-assets": "Assets verwalten",
         "nav-monthly-inventory": "Monatsinventur",
+        "appearance-settings-title": "Darstellung",
+        "appearance-surface-toggle-label": "Alternative Box-Optik",
+        "appearance-surface-toggle-hint": "Übernimmt die weichere Pagination-Optik für Karten und Boxen.",
         "settings-placeholder": "Einstellungsmenü folgt."
     },
     en: {
@@ -107,7 +110,7 @@ const navTranslations = {
         "asset-filter-reset": "Reset Filters",
         "asset-pagination-prev": "Previous 10",
         "asset-pagination-next": "Next 10",
-        "asset-validation-refresh": "Refresh Page",
+        "asset-validation-refresh": "Clear Import Messages",
         "asset-settings-title": "Default Values",
         "asset-default-assigned-label": "Assigned To",
         "asset-default-assigned-placeholder": "e.g. Support Team",
@@ -123,9 +126,14 @@ const navTranslations = {
         "nav-overview": "Overview",
         "nav-assets": "Manage Assets",
         "nav-monthly-inventory": "Monthly Inventory",
+        "appearance-settings-title": "Appearance",
+        "appearance-surface-toggle-label": "Alternative panel style",
+        "appearance-surface-toggle-hint": "Apply the softer pagination look to cards and panels.",
         "settings-placeholder": "Settings menu coming soon."
     }
 };
+
+    const SURFACE_STYLE_STORAGE_KEY = 'surfaceStyle';
 
 const breadcrumbPageMap = {
     'index.html': 'nav-home',
@@ -230,6 +238,60 @@ function setNavTheme(theme) {
     localStorage.setItem('theme', theme);
 }
 
+function setNavSurfaceStyle(style) {
+    const nextStyle = style === 'pagination' ? 'pagination' : 'classic';
+    document.documentElement.setAttribute('data-surface-style', nextStyle);
+    localStorage.setItem(SURFACE_STYLE_STORAGE_KEY, nextStyle);
+
+    const toggle = document.getElementById('appearanceSurfaceToggle');
+    if (toggle) {
+        toggle.checked = nextStyle === 'pagination';
+    }
+
+    document.dispatchEvent(new CustomEvent('mdm-surface-style-changed', { detail: { style: nextStyle } }));
+}
+
+function ensureAppearanceSettings() {
+    const settingsMenu = document.getElementById('settings-menu');
+    if (!settingsMenu) {
+        return;
+    }
+
+    let host = settingsMenu.querySelector('.asset-settings-panel');
+    if (!host) {
+        settingsMenu.innerHTML = '';
+        host = document.createElement('div');
+        host.className = 'asset-settings-panel common-settings-panel';
+        settingsMenu.appendChild(host);
+    } else {
+        settingsMenu.querySelector('[data-i18n="settings-placeholder"]')?.remove();
+    }
+
+    if (host.querySelector('#appearanceSettingsSection')) {
+        return;
+    }
+
+    const section = document.createElement('section');
+    section.id = 'appearanceSettingsSection';
+    section.className = 'asset-settings-section appearance-settings-section';
+    section.innerHTML = `
+        <h3 data-i18n="appearance-settings-title">Darstellung</h3>
+        <label class="appearance-toggle-row" for="appearanceSurfaceToggle">
+            <input id="appearanceSurfaceToggle" class="appearance-toggle-input" type="checkbox">
+            <span data-i18n="appearance-surface-toggle-label">Alternative Box-Optik</span>
+        </label>
+        <p class="appearance-settings-hint" data-i18n="appearance-surface-toggle-hint">Übernimmt die weichere Pagination-Optik für Karten und Boxen.</p>
+    `;
+    host.prepend(section);
+
+    const toggle = section.querySelector('#appearanceSurfaceToggle');
+    if (toggle) {
+        toggle.addEventListener('change', () => {
+            setNavSurfaceStyle(toggle.checked ? 'pagination' : 'classic');
+        });
+    }
+}
+
 function closeNavDrawer() {
     const drawer = document.getElementById('nav-drawer');
     const backdrop = document.getElementById('menu-backdrop');
@@ -270,13 +332,53 @@ function toggleSettingsMenu() {
     }
 }
 
+function isWebOriginSupported() {
+    return window.location.protocol === 'http:' || window.location.protocol === 'https:';
+}
+
+async function requestPersistentStorage() {
+    if (!isWebOriginSupported()) {
+        console.info('[Storage] Skipped persistent storage request on non-http origin. Use localhost for shared browser storage.');
+        return;
+    }
+
+    if (!('storage' in navigator)) {
+        return;
+    }
+
+    if (typeof navigator.storage.persisted !== 'function' || typeof navigator.storage.persist !== 'function') {
+        return;
+    }
+
+    try {
+        const isPersisted = await navigator.storage.persisted();
+        if (isPersisted) {
+            console.log('[Storage] Persistent storage already enabled.');
+            return;
+        }
+
+        const granted = await navigator.storage.persist();
+        if (granted) {
+            console.log('[Storage] Persistent storage enabled.');
+        } else {
+            console.warn('[Storage] Persistent storage request was not granted by the browser.');
+        }
+    } catch (error) {
+        console.warn('[Storage] Persistent storage request failed:', error);
+    }
+}
+
 (function initNavigationShell() {
     const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
     const initialTheme = localStorage.getItem('theme') || (prefersDarkScheme.matches ? 'dark' : 'light');
+    const initialSurfaceStyle = localStorage.getItem(SURFACE_STYLE_STORAGE_KEY) || 'classic';
     const initialLanguage = localStorage.getItem('language') || 'de';
 
+    ensureAppearanceSettings();
     setNavTheme(initialTheme);
+    setNavSurfaceStyle(initialSurfaceStyle);
     setNavLanguage(initialLanguage);
+    requestPersistentStorage();
 
     const deButton = document.getElementById('lang-de');
     const enButton = document.getElementById('lang-en');
@@ -321,10 +423,22 @@ function toggleSettingsMenu() {
             settingsMenu.classList.add('hidden');
         }
     });
+
+    window.addEventListener('storage', (event) => {
+        if (event.key === 'theme' && event.newValue) {
+            setNavTheme(event.newValue);
+        }
+        if (event.key === 'language' && event.newValue) {
+            setNavLanguage(event.newValue);
+        }
+        if (event.key === SURFACE_STYLE_STORAGE_KEY) {
+            setNavSurfaceStyle(event.newValue || 'classic');
+        }
+    });
 })();
 
 // Service Worker registration (shared across all pages via navigation.js)
-if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator && isWebOriginSupported()) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./service-worker.js')
             .then(registration => {
@@ -339,6 +453,8 @@ if ('serviceWorker' in navigator) {
             }
         });
     });
+} else if ('serviceWorker' in navigator) {
+    console.info('[SW] Skipped service worker registration on non-http origin. Open via localhost for full app functionality.');
 }
 
 function showSwUpdateBanner(version) {

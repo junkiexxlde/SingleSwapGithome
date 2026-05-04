@@ -39,6 +39,20 @@
     --option-section-bg: #f7fbff;
     --option-heading-color: #345476;
     --option-input-bg: #ffffff;
+    --surface-alt-border: rgba(93, 125, 159, 0.16);
+    --surface-alt-border-strong: rgba(93, 125, 159, 0.24);
+    --surface-alt-shadow: 0 10px 28px rgba(26, 38, 48, 0.08);
+    --surface-alt-shadow-strong: 0 16px 34px rgba(26, 38, 48, 0.1);
+    --surface-alt-highlight: rgba(93, 125, 159, 0.08);
+}
+
+html {
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
+
+*, *::before, *::after {
+    box-sizing: inherit;
 }
 
 [data-theme="dark"] {
@@ -81,6 +95,11 @@
     --option-section-bg: #1b2a38;
     --option-heading-color: #9fc2e6;
     --option-input-bg: #1a2430;
+    --surface-alt-border: rgba(121, 160, 200, 0.24);
+    --surface-alt-border-strong: rgba(121, 160, 200, 0.38);
+    --surface-alt-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+    --surface-alt-shadow-strong: 0 18px 36px rgba(0, 0, 0, 0.26);
+    --surface-alt-highlight: rgba(121, 160, 200, 0.1);
 }
 
 body {
@@ -367,6 +386,111 @@ body.landing-page::-webkit-scrollbar {
     background: var(--option-section-bg);
 }
 
+.appearance-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin: 0;
+    font-weight: 600;
+}
+
+.appearance-toggle-input {
+    width: 18px;
+    height: 18px;
+    min-height: 18px;
+    margin: 0;
+}
+
+.appearance-settings-hint {
+    margin: 0;
+    text-align: left;
+    font-size: 0.88rem;
+    opacity: 0.82;
+}
+
+[data-surface-style="pagination"] .nav-shell,
+[data-surface-style="pagination"] .form-container,
+[data-surface-style="pagination"] .overview-search-section,
+[data-surface-style="pagination"] .asset-action-card,
+[data-surface-style="pagination"] .asset-status,
+[data-surface-style="pagination"] .asset-validation-report,
+[data-surface-style="pagination"] .asset-filter-bar,
+[data-surface-style="pagination"] .asset-table-wrap,
+[data-surface-style="pagination"] .asset-pagination,
+[data-surface-style="pagination"] .monthly-inventory-stat-card,
+[data-surface-style="pagination"] .modal-content,
+[data-surface-style="pagination"] .selected-dataset-display,
+[data-surface-style="pagination"] .dataset-card,
+[data-surface-style="pagination"] .asset-detail-item,
+[data-surface-style="pagination"] .asset-detail-modal-content,
+[data-surface-style="pagination"] .dataset-wrapper,
+[data-surface-style="pagination"] .dataset-wrapper.collapsed,
+[data-surface-style="pagination"] .settings-menu,
+[data-surface-style="pagination"] .asset-settings-section,
+[data-surface-style="pagination"] .asset-settings-subsection,
+[data-surface-style="pagination"] .asset-defaults-table-wrap {
+    border-color: var(--surface-alt-border);
+    box-shadow: var(--surface-alt-shadow);
+}
+
+[data-surface-style="pagination"] .nav-shell,
+[data-surface-style="pagination"] .asset-pagination {
+    border-radius: 20px;
+    box-shadow: var(--surface-alt-shadow-strong);
+}
+
+[data-surface-style="pagination"] .form-container,
+[data-surface-style="pagination"] .overview-search-section,
+[data-surface-style="pagination"] .asset-action-card,
+[data-surface-style="pagination"] .asset-status,
+[data-surface-style="pagination"] .asset-validation-report,
+[data-surface-style="pagination"] .asset-filter-bar,
+[data-surface-style="pagination"] .monthly-inventory-stat-card,
+[data-surface-style="pagination"] .modal-content,
+[data-surface-style="pagination"] .selected-dataset-display,
+[data-surface-style="pagination"] .dataset-card,
+[data-surface-style="pagination"] .asset-detail-item,
+[data-surface-style="pagination"] .asset-detail-modal-content,
+[data-surface-style="pagination"] .dataset-wrapper,
+[data-surface-style="pagination"] .dataset-wrapper.collapsed,
+[data-surface-style="pagination"] .asset-settings-section,
+[data-surface-style="pagination"] .asset-settings-subsection,
+[data-surface-style="pagination"] .asset-defaults-table-wrap {
+    border-radius: 14px;
+}
+
+[data-surface-style="pagination"] .settings-menu,
+[data-surface-style="pagination"] .asset-settings-section,
+[data-surface-style="pagination"] .asset-settings-subsection {
+    background: var(--card-bg);
+}
+
+[data-surface-style="pagination"] .asset-pagination-nav {
+    color: #5961d8;
+}
+
+[data-surface-style="pagination"] .asset-pagination-nav:hover,
+[data-surface-style="pagination"] .asset-pagination-nav:focus-visible {
+    color: #3740c9;
+}
+
+[data-surface-style="pagination"] .asset-pagination-nav:disabled {
+    color: rgba(89, 97, 216, 0.36);
+}
+
+[data-surface-style="pagination"] .asset-settings-menu-item,
+[data-surface-style="pagination"] .asset-page-button:hover,
+[data-surface-style="pagination"] .asset-page-button:focus-visible {
+    border-color: var(--surface-alt-border-strong);
+    background: var(--surface-alt-highlight);
+}
+
+[data-surface-style="pagination"] .asset-settings-menu-item.active,
+[data-surface-style="pagination"] .asset-page-button.active {
+    border-color: var(--surface-alt-border-strong);
+    background: var(--surface-alt-highlight);
+}
+
 .asset-admin-actions {
     display: flex;
     gap: 8px;
@@ -639,10 +763,12 @@ h2 {
 
 .subpage-layout {
     width: min(92vw, 760px);
+    max-width: 100%;
     display: flex;
     flex-direction: column;
     gap: 0;
     padding: 0 1rem;
+    min-width: 0;
 }
 
 .subpage-heading {
@@ -661,12 +787,15 @@ h2 {
 
 .nav-shell {
     width: min(92vw, 760px);
+    max-width: 100%;
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 20px;
     box-shadow: 0 16px 38px rgba(26, 38, 48, 0.16);
     padding: 1.8rem;
     animation: liftIn 420ms ease-out;
+    min-width: 0;
+    overflow-x: hidden;
 }
 
 .nav-header {
@@ -760,11 +889,18 @@ h2 {
 
 .card {
     width: min(92vw, 680px);
+    max-width: 100%;
+}
+
+.subpage-link-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    margin-top: 1.2rem;
 }
 
 .back-link {
     display: inline-block;
-    margin-top: 1.2rem;
     text-decoration: none;
     color: #fff;
     padding: 0.7rem 1rem;
@@ -800,9 +936,10 @@ h2 {
 
 .asset-actions-row {
     display: grid;
-    grid-template-columns: repeat(2, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
     gap: 14px;
     margin-bottom: 1rem;
+    width: 100%;
 }
 
 .asset-action-card {
@@ -813,6 +950,7 @@ h2 {
     flex-direction: column;
     gap: 8px;
     background: var(--card-bg);
+    min-width: 0;
 }
 
 .asset-action-card h3 {
@@ -853,12 +991,18 @@ h2 {
 }
 
 .monthly-inventory-page .subpage-layout {
-    width: min(97vw, 1220px);
-    max-width: 1220px;
+    width: min(94vw, 1040px);
+    max-width: 1040px;
 }
 
 .monthly-inventory-shell {
     width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.monthly-inventory-shell .back-link {
+    margin-top: 1.2rem;
 }
 
 .monthly-inventory-intro {
@@ -877,6 +1021,7 @@ h2 {
 
 .monthly-inventory-intro-copy {
     min-width: min(100%, 280px);
+    max-width: 100%;
 }
 
 .month-badge {
@@ -894,6 +1039,7 @@ h2 {
     flex-direction: column;
     gap: 0.45rem;
     min-width: min(100%, 260px);
+    max-width: 100%;
 }
 
 .monthly-inventory-controls {
@@ -901,6 +1047,8 @@ h2 {
     flex-wrap: wrap;
     gap: 14px;
     justify-content: flex-end;
+    width: 100%;
+    min-width: 0;
 }
 
 .monthly-inventory-selector label {
@@ -1104,19 +1252,21 @@ h2 {
 
 .asset-filter-bar {
     display: grid;
-    grid-template-columns: repeat(4, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
     gap: 10px;
     margin-bottom: 0.9rem;
     padding: 10px;
     border: 1px solid var(--border-color);
     border-radius: 10px;
     background: var(--card-bg);
+    width: 100%;
 }
 
 .asset-filter-group {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    min-width: 0;
 }
 
 .asset-filter-group label {
@@ -1173,47 +1323,137 @@ h2 {
 }
 
 .asset-table-wrap {
+    width: 100%;
     max-width: 100%;
     overflow-x: auto;
     border: 1px solid var(--border-color);
     border-radius: 10px;
 }
 
+.forms-row {
+    width: 100%;
+    align-items: stretch;
+}
+
+.form-container {
+    max-width: 100%;
+    min-width: min(100%, 340px);
+    min-inline-size: 0;
+}
+
 .asset-pagination {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-top: 0.8rem;
-    padding: 10px 12px;
+    flex-direction: column;
+    gap: 0.8rem;
+    margin-top: 1rem;
+    padding: 1rem 1.1rem;
     border: 1px solid var(--border-color);
     border-radius: 10px;
     background: var(--card-bg);
+    box-shadow: var(--shadow);
 }
 
 .asset-pagination-info {
     font-size: 0.9rem;
     color: var(--text-color);
+    opacity: 0.72;
 }
 
 .asset-pagination-actions {
+    width: 100%;
+}
+
+.asset-pagination-bar {
     display: flex;
-    gap: 6px;
+    align-items: center;
+    gap: 1rem;
+    justify-content: space-between;
     flex-wrap: wrap;
-    justify-content: flex-end;
+    width: 100%;
+}
+
+.asset-pagination-numbers {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.asset-pagination-nav {
+    border: 0;
+    background: transparent;
+    color: var(--primary-color);
+    font: inherit;
+    font-weight: 500;
+    padding: 0.55rem 0.35rem;
+    cursor: pointer;
+}
+
+.asset-pagination-nav:hover,
+.asset-pagination-nav:focus-visible {
+    color: var(--primary-color);
+    opacity: 0.82;
+    outline: none;
+}
+
+.asset-pagination-nav:disabled {
+    color: rgba(52, 73, 99, 0.38);
+    cursor: default;
 }
 
 .asset-page-button {
-    min-width: 32px;
-    min-height: 32px;
-    padding: 4px 8px;
-    font-size: 0.9rem;
+    min-width: 2.5rem;
+    height: 2.5rem;
+    padding: 0.45rem 0.7rem;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-color);
+    font-size: 0.95rem;
+    font-weight: 600;
     line-height: 1;
+    cursor: pointer;
+}
+
+.asset-page-button:hover,
+.asset-page-button:focus-visible {
+    border-color: var(--border-color);
+    background: rgba(52, 73, 99, 0.08);
+    outline: none;
 }
 
 .asset-page-button.active {
-    background-color: var(--primary-color);
-    color: #fff;
+    border-color: var(--border-color);
+    background: rgba(52, 73, 99, 0.1);
+    color: var(--primary-color);
+}
+
+.asset-pagination-ellipsis {
+    color: rgba(34, 34, 34, 0.55);
+    font-weight: 700;
+    padding: 0 0.15rem;
+}
+
+[data-theme="dark"] .asset-pagination-ellipsis {
+    color: rgba(240, 240, 240, 0.55);
+}
+
+.asset-pagination-size-label {
+    flex: 0 0 auto;
+}
+
+.asset-page-size-select {
+    min-width: 8.5rem;
+    height: 2.75rem;
+    padding: 0.6rem 2.4rem 0.6rem 0.9rem;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    font-size: 0.95rem;
 }
 
 .asset-table {
@@ -1224,20 +1464,25 @@ h2 {
 
 .asset-page .subpage-layout,
 .overview-page .subpage-layout {
-    width: min(97vw, 1220px);
-    max-width: 1220px;
+    width: min(94vw, 1040px);
+    max-width: 1040px;
 }
 
 .asset-page .nav-shell {
     width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
 }
 
 .singleswap-page .subpage-layout {
-    width: min(97vw, 1220px);
+    width: min(94vw, 1080px);
+    max-width: 1080px;
 }
 
 .singleswap-page .nav-shell {
     width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
 }
 
 .singleswap-page .subpage-heading {
@@ -1490,6 +1735,12 @@ h2 {
     background: var(--option-input-bg, var(--card-bg));
     color: var(--text-color);
     font: inherit;
+}
+
+.monthly-inventory-month-fallback {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 120px;
+    gap: 10px;
 }
 
 .asset-detail-input:disabled {
@@ -2413,6 +2664,48 @@ textarea {
 }
 
 @media (max-width: 768px) {
+    .subpage-layout,
+    .overview-page .subpage-layout,
+    .asset-page .subpage-layout,
+    .monthly-inventory-page .subpage-layout,
+    .singleswap-page .subpage-layout {
+        width: 100%;
+        max-width: 100%;
+        padding: 0 0.5rem;
+    }
+
+    .nav-shell,
+    .asset-page .nav-shell,
+    .monthly-inventory-shell,
+    .singleswap-page .nav-shell {
+        width: 100%;
+        max-width: 100%;
+        padding: 1rem;
+        border-radius: 12px;
+    }
+
+    .asset-actions-row,
+    .asset-filter-bar,
+    .monthly-inventory-month-fallback {
+        grid-template-columns: 1fr;
+    }
+
+    .singleswap-page .form-group > input[type="text"],
+    .singleswap-page .form-group > select,
+    .singleswap-page .form-group > textarea,
+    .asset-page .asset-action-card select,
+    .asset-page .asset-filter-group input,
+    .asset-page .asset-filter-group select,
+    .monthly-inventory-selector input,
+    .monthly-inventory-selector select {
+        width: 100%;
+    }
+
+    .subpage-link-row .back-link {
+        flex: 1 1 100%;
+        text-align: center;
+    }
+
     body.has-topbar {
         padding-top: 92px;
     }
@@ -2750,7 +3043,7 @@ textarea {
     .monthly-inventory-selector select {
         width: 100%;
     }
-    
+}
 
 @media (max-width: 480px) {
     body.has-topbar {
