@@ -6,20 +6,8 @@ const INVENTORY_MONTHLY_STORE = 'monthly_inventory_movements';
 const INVENTORY_REQUIRED_STORES = [INVENTORY_STORE, INVENTORY_DEFAULTS_STORE, INVENTORY_MONTHLY_STORE];
 const MANAGED_DEVICE_TYPES_KEY = 'mdmtool_managed_device_types_v1';
 const MANAGED_MODELS_KEY = 'mdmtool_managed_models_v1';
-const DEFAULT_DEVICE_TYPES = ['iPhone', 'iPad', 'MacBook'];
-const VERSION_DEVICE_TYPE_MAP = {
-    'iphone se': 'iPhone',
-    'iphone 13': 'iPhone',
-    'iphone 15': 'iPhone',
-    'iphone 15 pro': 'iPhone',
-    'iphone 16e': 'iPhone',
-    'iphone 17': 'iPhone',
-    'ipad pro': 'iPad',
-    'ipad air': 'iPad',
-    'ipad mini': 'iPad',
-    'macbook air': 'MacBook',
-    'macbook pro': 'MacBook'
-};
+const DEFAULT_DEVICE_TYPES = [];
+const VERSION_DEVICE_TYPE_MAP = {};
 
 const typeSelect = document.getElementById('monthlyInventoryTypeSelect');
 const monthSelect = document.getElementById('monthlyInventoryMonthSelect');
@@ -45,7 +33,7 @@ const resetButton = document.getElementById('monthlyInventoryResetButton');
 let inventoryRows = [];
 let selectedType = '';
 let selectedModel = '';
-let managedDeviceTypes = [...DEFAULT_DEVICE_TYPES];
+let managedDeviceTypes = [];
 let managedModels = [];
 let useMonthFallback = false;
 
@@ -115,17 +103,7 @@ function normalizeTypeValue(value) {
 }
 
 function canonicalStoredDeviceType(value) {
-    const key = normalizeTypeValue(value);
-    if (key === 'iphone') {
-        return 'iPhone';
-    }
-    if (key === 'ipad') {
-        return 'iPad';
-    }
-    if (key === 'macbook') {
-        return 'MacBook';
-    }
-    return String(value || '').trim();
+    return String(value || '').trim().replace(/\s+/g, ' ');
 }
 
 function uniqueSortedValues(values) {
@@ -153,13 +131,12 @@ function formatCanonicalModelLabel(value) {
 }
 
 function canonicalModelName(value, type = '') {
-    return formatCanonicalModelLabel(value);
+    void type;
+    return String(value || '').trim().replace(/\s+/g, ' ');
 }
 
 function getDefaultManagedModels() {
-    return Object.entries(VERSION_DEVICE_TYPE_MAP).map(([versionKey, typeName]) => {
-        return { name: formatCanonicalModelLabel(versionKey), type: typeName };
-    });
+    return [];
 }
 
 function uniqueSortedModels(modelRows) {
@@ -195,9 +172,9 @@ function loadManagedDeviceTypes() {
     try {
         const raw = localStorage.getItem(MANAGED_DEVICE_TYPES_KEY);
         const parsed = raw ? JSON.parse(raw) : [];
-        managedDeviceTypes = uniqueSortedValues([...DEFAULT_DEVICE_TYPES, ...(Array.isArray(parsed) ? parsed : [])]);
+        managedDeviceTypes = uniqueSortedValues(Array.isArray(parsed) ? parsed : []);
     } catch {
-        managedDeviceTypes = [...DEFAULT_DEVICE_TYPES];
+        managedDeviceTypes = [];
     }
 }
 
@@ -205,12 +182,9 @@ function loadManagedModels() {
     try {
         const raw = localStorage.getItem(MANAGED_MODELS_KEY);
         const parsed = raw ? JSON.parse(raw) : [];
-        managedModels = uniqueSortedModels([
-            ...getDefaultManagedModels(),
-            ...(Array.isArray(parsed) ? parsed : [])
-        ]);
+        managedModels = uniqueSortedModels(Array.isArray(parsed) ? parsed : []);
     } catch {
-        managedModels = uniqueSortedModels(getDefaultManagedModels());
+        managedModels = [];
     }
 }
 
@@ -866,6 +840,20 @@ document.addEventListener('mdm-language-changed', () => {
     renderModelTabs();
 });
 
+
+window.addEventListener('focus', () => {
+    loadInventoryRows();
+});
+
+window.addEventListener('storage', (event) => {
+    if (
+        event.key === MANAGED_DEVICE_TYPES_KEY
+        || event.key === MANAGED_MODELS_KEY
+        || event.key === 'language'
+    ) {
+        loadInventoryRows();
+    }
+});
 initMonthPicker();
 renderMonthLabel();
 renderSettingsTitle();

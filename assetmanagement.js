@@ -7,12 +7,8 @@ const DEFAULTS_RECORD_ID = 'globalDefaults';
 const INVENTORY_CLEAR_ONCE_KEY = 'mdmtool_inventory_cleared_2026_04_19';
 const MANAGED_DEVICE_TYPES_KEY = 'mdmtool_managed_device_types_v1';
 const MANAGED_MODELS_KEY = 'mdmtool_managed_models_v1';
-const DEFAULT_DEVICE_TYPES = ['iPhone', 'iPad', 'MacBook'];
-const CANONICAL_DEVICE_TYPE_MAP = {
-    iphone: 'iPhone',
-    ipad: 'iPad',
-    macbook: 'MacBook'
-};
+const DEFAULT_DEVICE_TYPES = [];
+const CANONICAL_DEVICE_TYPE_MAP = {};
 
 const ASSET_COLUMNS = [
     { key: 'type', labelDe: 'Gerätetyp', labelEn: 'Device Type' },
@@ -48,20 +44,7 @@ const DEFAULT_INVENTORY_DEFAULTS = {
 };
 const INVENTORY_REQUIRED_STORES = [INVENTORY_STORE, INVENTORY_DEFAULTS_STORE, INVENTORY_MONTHLY_STORE];
 
-// Mirrors the selectable versions and data-type mapping from singleswap.html.
-const VERSION_DEVICE_TYPE_MAP = {
-    'iphone se': 'iPhone',
-    'iphone 13': 'iPhone',
-    'iphone 15': 'iPhone',
-    'iphone 15 pro': 'iPhone',
-    'iphone 16e': 'iPhone',
-    'iphone 17': 'iPhone',
-    'ipad pro': 'iPad',
-    'ipad air': 'iPad',
-    'ipad mini': 'iPad',
-    'macbook air': 'MacBook',
-    'macbook pro': 'MacBook'
-};
+const VERSION_DEVICE_TYPE_MAP = {};
 
 let assetRows = [];
 let selectedFile = null;
@@ -69,7 +52,7 @@ let lastValidationReport = [];
 let currentPage = 1;
 let pageSize = 10;
 let inventoryDefaults = { ...DEFAULT_INVENTORY_DEFAULTS };
-let managedDeviceTypes = [...DEFAULT_DEVICE_TYPES];
+let managedDeviceTypes = [];
 let managedModels = [];
 let editingTypeName = '';
 let editingModelKey = '';
@@ -209,16 +192,14 @@ function normalizeTypeValue(value) {
 }
 
 function canonicalStoredDeviceType(value) {
-    const key = normalizeTypeValue(value);
-    return CANONICAL_DEVICE_TYPE_MAP[key] || String(value || '').trim();
+    return String(value || '').trim().replace(/\s+/g, ' ');
 }
 
 function canonicalDeviceType(value) {
     const key = normalizeTypeValue(value);
-    if (CANONICAL_DEVICE_TYPE_MAP[key]) {
-        return CANONICAL_DEVICE_TYPE_MAP[key];
+    if (!key) {
+        return '';
     }
-
     const match = managedDeviceTypes.find((typeName) => normalizeTypeValue(typeName) === key);
     return match || '';
 }
@@ -253,9 +234,9 @@ function loadManagedDeviceTypes() {
     try {
         const raw = localStorage.getItem(MANAGED_DEVICE_TYPES_KEY);
         const parsed = raw ? JSON.parse(raw) : [];
-        managedDeviceTypes = uniqueSortedTypes([...DEFAULT_DEVICE_TYPES, ...(Array.isArray(parsed) ? parsed : [])]);
+        managedDeviceTypes = uniqueSortedTypes(Array.isArray(parsed) ? parsed : []);
     } catch {
-        managedDeviceTypes = uniqueSortedTypes(DEFAULT_DEVICE_TYPES);
+        managedDeviceTypes = [];
     }
 }
 
@@ -283,17 +264,16 @@ function normalizeModelValue(value) {
 }
 
 function canonicalModelName(value, type = '') {
-    return formatCanonicalModelLabel(value);
+    void type;
+    return String(value || '').trim().replace(/\s+/g, ' ');
 }
 
 function sanitizeManagedModelName(value) {
-    return formatCanonicalModelLabel(value);
+    return canonicalModelName(value);
 }
 
 function getDefaultManagedModels() {
-    return Object.entries(VERSION_DEVICE_TYPE_MAP).map(([versionKey, typeName]) => {
-        return { name: formatCanonicalModelLabel(versionKey), type: typeName };
-    });
+    return [];
 }
 
 function uniqueSortedModels(modelRows) {
@@ -302,7 +282,7 @@ function uniqueSortedModels(modelRows) {
 
     modelRows.forEach((entry) => {
         const cleanName = canonicalModelName(entry?.name, entry?.type);
-        const cleanType = canonicalDeviceType(entry?.type);
+        const cleanType = sanitizeManagedTypeName(entry?.type);
         if (!cleanName || !cleanType) {
             return;
         }
@@ -329,10 +309,10 @@ function loadManagedModels() {
     try {
         const raw = localStorage.getItem(MANAGED_MODELS_KEY);
         const parsed = raw ? JSON.parse(raw) : [];
-        const source = [...getDefaultManagedModels(), ...(Array.isArray(parsed) ? parsed : [])];
+        const source = Array.isArray(parsed) ? parsed : [];
         managedModels = uniqueSortedModels(source);
     } catch {
-        managedModels = uniqueSortedModels(getDefaultManagedModels());
+        managedModels = [];
     }
 }
 
@@ -353,7 +333,48 @@ function expectedTypeForVersion(version) {
     if (managedMatch) {
         return managedMatch.type;
     }
-    return VERSION_DEVICE_TYPE_MAP[key] || '';
+    return '';
+}
+
+function collectManagedMetadataFromRows(rows) {
+    const types = [];
+    const models = [];
+
+    (Array.isArray(rows) ? rows : []).forEach((row) => {
+        const typeName = sanitizeManagedTypeName(row?.type);
+        const modelName = sanitizeManagedModelName(row?.version);
+        if (typeName) {
+            types.push(typeName);
+        }
+        if (typeName && modelName) {
+            models.push({ type: typeName, name: modelName });
+        }
+    });
+
+    return {
+        types: uniqueSortedTypes(types),
+        models: uniqueSortedModels(models)
+    };
+}
+
+function syncManagedMetadataFromRows(rows) {
+    const collected = collectManagedMetadataFromRows(rows);
+    const nextTypes = uniqueSortedTypes([...managedDeviceTypes, ...collected.types]);
+    const nextModels = uniqueSortedModels([...managedModels, ...collected.models]);
+    const typesChanged = JSON.stringify(nextTypes) !== JSON.stringify(managedDeviceTypes);
+    const modelsChanged = JSON.stringify(nextModels) !== JSON.stringify(managedModels);
+
+    managedDeviceTypes = nextTypes;
+    managedModels = nextModels;
+
+    if (typesChanged) {
+        persistManagedDeviceTypes();
+    }
+    if (modelsChanged) {
+        persistManagedModels();
+    }
+
+    return { typesChanged, modelsChanged };
 }
 
 function escapeHtml(value) {
@@ -368,6 +389,11 @@ function escapeHtml(value) {
 function showStatus(message, isError = false) {
     statusBox.textContent = message;
     statusBox.style.background = isError ? 'rgba(180, 73, 73, 0.14)' : 'rgba(52, 73, 99, 0.08)';
+}
+
+function showDeleteFeedback(message, isError = false) {
+    window.alert(message);
+    showStatus(message, isError);
 }
 
 function clearImportFeedback() {
@@ -941,18 +967,15 @@ function renderAssetTypeAdminTable() {
 
     assetTypeAdminTableBody.innerHTML = managedDeviceTypes
         .map((typeName) => {
-            const normalized = normalizeTypeValue(typeName);
-            const isDefaultType = DEFAULT_DEVICE_TYPES.some((defaultType) => normalizeTypeValue(defaultType) === normalized);
             const editLabel = t('Bearbeiten', 'Edit');
             const deleteLabel = t('Entfernen', 'Remove');
-            const removeDisabled = isDefaultType ? 'disabled' : '';
 
             return `<tr>
                 <td>${escapeHtml(typeName)}</td>
                 <td>
                     <div class="asset-type-admin-actions">
                         <button type="button" class="button secondary" data-action="edit" data-type="${escapeHtml(typeName)}">${escapeHtml(editLabel)}</button>
-                        <button type="button" class="button secondary" data-action="remove" data-type="${escapeHtml(typeName)}" ${removeDisabled}>${escapeHtml(deleteLabel)}</button>
+                        <button type="button" class="button secondary" data-action="remove" data-type="${escapeHtml(typeName)}">${escapeHtml(deleteLabel)}</button>
                     </div>
                 </td>
             </tr>`;
@@ -988,17 +1011,11 @@ function renderAssetModelAdminTable() {
         <th>${t('Aktionen', 'Actions')}</th>
     </tr>`;
 
-    const defaultModelKeys = new Set(
-        getDefaultManagedModels().map((entry) => `${normalizeTypeValue(entry.type)}::${normalizeModelValue(entry.name)}`)
-    );
-
     assetModelAdminTableBody.innerHTML = managedModels
         .map((entry) => {
             const rowKey = `${normalizeTypeValue(entry.type)}::${normalizeModelValue(entry.name)}`;
-            const isDefault = defaultModelKeys.has(rowKey);
             const editLabel = t('Bearbeiten', 'Edit');
             const deleteLabel = t('Entfernen', 'Remove');
-            const removeDisabled = isDefault ? 'disabled' : '';
 
             return `<tr>
                 <td>${escapeHtml(entry.type)}</td>
@@ -1006,12 +1023,116 @@ function renderAssetModelAdminTable() {
                 <td>
                     <div class="asset-type-admin-actions">
                         <button type="button" class="button secondary" data-model-action="edit" data-model-key="${escapeHtml(rowKey)}">${escapeHtml(editLabel)}</button>
-                        <button type="button" class="button secondary" data-model-action="remove" data-model-key="${escapeHtml(rowKey)}" ${removeDisabled}>${escapeHtml(deleteLabel)}</button>
+                        <button type="button" class="button secondary" data-model-action="remove" data-model-key="${escapeHtml(rowKey)}">${escapeHtml(deleteLabel)}</button>
                     </div>
                 </td>
             </tr>`;
         })
         .join('');
+}
+
+async function persistAssetRows(rows) {
+    const db = await openInventoryDb();
+    try {
+        await persistCanonicalInventoryRows(db, rows);
+    } finally {
+        db.close();
+    }
+
+    assetRows = rows.map((row) => sanitizeRow(row));
+    syncManagedMetadataFromRows(assetRows);
+    refreshFilterOptions();
+    resetToFirstPage();
+    renderTable();
+}
+
+function refreshManagedMetadataViews(preferredType = '') {
+    renderAssetTypeAdminTable();
+    renderAssetModelTypeOptions(preferredType);
+    renderAssetModelAdminTable();
+}
+
+function clearManagedMetadata() {
+    managedDeviceTypes = [];
+    managedModels = [];
+    localStorage.removeItem(MANAGED_DEVICE_TYPES_KEY);
+    localStorage.removeItem(MANAGED_MODELS_KEY);
+    clearTypeEditMode();
+    clearModelEditMode();
+    refreshManagedMetadataViews();
+}
+
+function collectUnknownImportMetadata(importedRows) {
+    const unknownTypes = new Map();
+    const missingModels = new Map();
+
+    importedRows.forEach((entry) => {
+        const typeName = sanitizeManagedTypeName(entry?.row?.type);
+        const modelName = sanitizeManagedModelName(entry?.row?.version);
+        const knownType = canonicalDeviceType(typeName);
+        const effectiveType = knownType || typeName;
+
+        if (typeName && !knownType) {
+            unknownTypes.set(normalizeTypeValue(typeName), typeName);
+        }
+
+        if (effectiveType && modelName) {
+            const modelKey = `${normalizeTypeValue(effectiveType)}::${normalizeModelValue(modelName)}`;
+            const exists = managedModels.some((entryModel) => (
+                normalizeTypeValue(entryModel.type) === normalizeTypeValue(effectiveType)
+                && normalizeModelValue(entryModel.name) === normalizeModelValue(modelName)
+            ));
+            if (!exists) {
+                missingModels.set(modelKey, { type: effectiveType, name: modelName });
+            }
+        }
+    });
+
+    return {
+        unknownTypes: Array.from(unknownTypes.values()),
+        missingModels: Array.from(missingModels.values())
+    };
+}
+
+function acceptUnknownImportMetadata(importedRows) {
+    const { unknownTypes, missingModels } = collectUnknownImportMetadata(importedRows);
+    const rejectedTypes = new Set();
+    let acceptedTypeCount = 0;
+
+    unknownTypes.forEach((typeName) => {
+        const confirmed = window.confirm(
+            t(
+                `Unbekannter Gerätetyp „${typeName}“ gefunden. Möchten Sie ihn übernehmen?`,
+                `Unknown device type "${typeName}" found. Do you want to accept it?`
+            )
+        );
+
+        if (!confirmed) {
+            rejectedTypes.add(normalizeTypeValue(typeName));
+            return;
+        }
+
+        managedDeviceTypes = uniqueSortedTypes([...managedDeviceTypes, typeName]);
+        acceptedTypeCount += 1;
+    });
+
+    const acceptedModels = missingModels.filter((entry) => !rejectedTypes.has(normalizeTypeValue(entry.type)));
+    if (acceptedTypeCount > 0) {
+        persistManagedDeviceTypes();
+    }
+    if (acceptedModels.length > 0) {
+        managedModels = uniqueSortedModels([...managedModels, ...acceptedModels]);
+        persistManagedModels();
+    }
+    if (acceptedTypeCount > 0 || acceptedModels.length > 0) {
+        refreshManagedMetadataViews();
+    }
+
+    return {
+        rejectedTypes,
+        acceptedTypeCount,
+        acceptedModelCount: acceptedModels.length
+    };
 }
 
 function clearModelEditMode() {
@@ -1047,9 +1168,9 @@ function setModelEditMode(modelKey) {
     renderAssetAdminTexts();
 }
 
-function saveAcceptedModel() {
+async function saveAcceptedModel() {
     const modelName = sanitizeManagedModelName(assetModelAdminInput?.value || '');
-    const typeName = canonicalDeviceType(assetModelTypeSelect?.value || '');
+    const typeName = sanitizeManagedTypeName(assetModelTypeSelect?.value || '');
 
     if (!typeName) {
         showStatus(t('Bitte zuerst einen gültigen Gerätetyp wählen.', 'Please select a valid device type first.'), true);
@@ -1066,7 +1187,7 @@ function saveAcceptedModel() {
         `${normalizeTypeValue(entry.type)}::${normalizeModelValue(entry.name)}` === nextKey
     ));
 
-    if (!editingModelKey && modelExists) {
+    if (modelExists && editingModelKey !== nextKey) {
         showStatus(t(`Typ bereits vorhanden: ${modelName}`, `Model already exists: ${modelName}`), true);
         return;
     }
@@ -1076,9 +1197,25 @@ function saveAcceptedModel() {
     ));
     managedModels = uniqueSortedModels([...nextModels, { name: modelName, type: typeName }]);
     persistManagedModels();
+
+    if (editingModelKey && editingModelKey !== nextKey) {
+        const updatedRows = assetRows.map((row) => {
+            const rowKey = `${normalizeTypeValue(row.type)}::${normalizeModelValue(row.version)}`;
+            if (rowKey !== editingModelKey) {
+                return row;
+            }
+
+            return sanitizeRow({
+                ...row,
+                type: typeName,
+                version: modelName
+            });
+        });
+        await persistAssetRows(updatedRows);
+    }
+
     clearModelEditMode();
-    renderAssetModelTypeOptions(typeName);
-    renderAssetModelAdminTable();
+    refreshManagedMetadataViews(typeName);
     showStatus(t('Typ erfolgreich aktualisiert.', 'Model updated successfully.'));
 }
 
@@ -1094,42 +1231,63 @@ function getInventoryUsageForModel(modelKey) {
     ));
 }
 
+function getInventoryUsageForDeviceType(typeName) {
+    const typeKey = normalizeTypeValue(typeName);
+    if (!typeKey) {
+        return [];
+    }
+
+    return assetRows.filter((row) => normalizeTypeValue(row.type) === typeKey);
+}
+
+function getManagedModelsForType(typeName) {
+    const typeKey = normalizeTypeValue(typeName);
+    if (!typeKey) {
+        return [];
+    }
+
+    return managedModels.filter((entry) => normalizeTypeValue(entry.type) === typeKey);
+}
+
 function removeAcceptedModel(modelKey) {
-    const defaultKeys = new Set(
-        getDefaultManagedModels().map((entry) => `${normalizeTypeValue(entry.type)}::${normalizeModelValue(entry.name)}`)
-    );
-    if (defaultKeys.has(modelKey)) {
-        showStatus(t('Standard-Typen können nicht entfernt werden.', 'Default models cannot be removed.'), true);
+    const [typeKey, modelNameKey] = String(modelKey || '').split('::');
+    const matchedModel = managedModels.find((entry) => (
+        normalizeTypeValue(entry.type) === typeKey
+        && normalizeModelValue(entry.name) === modelNameKey
+    ));
+
+    if (!matchedModel) {
+        showDeleteFeedback(
+            t('Typ konnte nicht entfernt werden.', 'Model could not be removed.'),
+            true
+        );
         return;
     }
 
     const referencedAssets = getInventoryUsageForModel(modelKey);
     if (referencedAssets.length > 0) {
-        const [typeKey, modelNameKey] = String(modelKey || '').split('::');
-        const matchedModel = managedModels.find((entry) => (
-            normalizeTypeValue(entry.type) === typeKey
-            && normalizeModelValue(entry.name) === modelNameKey
-        ));
         const typeLabel = matchedModel?.type || typeKey;
         const modelLabel = matchedModel?.name || modelNameKey;
         const message = t(
-            `Typ kann nicht entfernt werden: In der Lagerliste sind noch ${referencedAssets.length} Gerät(e) mit ${typeLabel} / ${modelLabel} vorhanden. Entferne oder ändere zuerst diese Assets.`,
-            `Model cannot be removed: ${referencedAssets.length} asset(s) with ${typeLabel} / ${modelLabel} are still present in inventory. Remove or update those assets first.`
+            `Typ „${modelLabel}“ kann nicht entfernt werden. Es sind noch ${referencedAssets.length} Asset(s) für ${typeLabel} vorhanden.`,
+            `Model "${modelLabel}" cannot be removed. ${referencedAssets.length} asset(s) for ${typeLabel} still exist.`
         );
-        window.alert(message);
-        showStatus(message, true);
+        showDeleteFeedback(message, true);
         return;
     }
 
     managedModels = managedModels.filter((entry) => (
         `${normalizeTypeValue(entry.type)}::${normalizeModelValue(entry.name)}` !== modelKey
     ));
+    managedModels = uniqueSortedModels(managedModels);
     persistManagedModels();
     if (editingModelKey === modelKey) {
         clearModelEditMode();
     }
-    renderAssetModelAdminTable();
-    showStatus(t('Typ entfernt.', 'Model removed.'));
+    refreshManagedMetadataViews();
+    showDeleteFeedback(
+        t(`Typ „${matchedModel.name}“ wurde entfernt.`, `Model "${matchedModel.name}" was removed.`)
+    );
 }
 
 function clearTypeEditMode() {
@@ -1155,7 +1313,7 @@ function setTypeEditMode(typeName) {
     renderAssetAdminTexts();
 }
 
-function saveAcceptedDeviceType() {
+async function saveAcceptedDeviceType() {
     const inputValue = sanitizeManagedTypeName(assetAdminTypeInput?.value || '');
     if (!inputValue) {
         showStatus(t('Bitte einen Gerätetyp eingeben.', 'Please enter a device type.'), true);
@@ -1165,7 +1323,7 @@ function saveAcceptedDeviceType() {
     const inputKey = normalizeTypeValue(inputValue);
     const existingType = managedDeviceTypes.find((typeName) => normalizeTypeValue(typeName) === inputKey);
 
-    if (!editingTypeName && existingType) {
+    if (existingType && normalizeTypeValue(existingType) !== normalizeTypeValue(editingTypeName)) {
         showStatus(t(`Gerätetyp bereits vorhanden: ${existingType}`, `Device type already exists: ${existingType}`), true);
         return;
     }
@@ -1174,33 +1332,84 @@ function saveAcceptedDeviceType() {
     nextTypes = uniqueSortedTypes([...nextTypes, inputValue]);
     managedDeviceTypes = nextTypes;
     persistManagedDeviceTypes();
+
+    if (editingTypeName && normalizeTypeValue(editingTypeName) !== normalizeTypeValue(inputValue)) {
+        managedModels = uniqueSortedModels(managedModels.map((entry) => {
+            if (normalizeTypeValue(entry.type) !== normalizeTypeValue(editingTypeName)) {
+                return entry;
+            }
+
+            return { ...entry, type: inputValue };
+        }));
+
+        const updatedRows = assetRows.map((row) => {
+            if (normalizeTypeValue(row.type) !== normalizeTypeValue(editingTypeName)) {
+                return row;
+            }
+
+            return sanitizeRow({
+                ...row,
+                type: inputValue
+            });
+        });
+        await persistAssetRows(updatedRows);
+    }
+
     managedModels = uniqueSortedModels(managedModels);
     persistManagedModels();
     clearTypeEditMode();
-    renderAssetTypeAdminTable();
-    renderAssetModelTypeOptions(inputValue);
-    renderAssetModelAdminTable();
+    refreshManagedMetadataViews(inputValue);
     showStatus(t('Gerätetyp erfolgreich aktualisiert.', 'Device type updated successfully.'));
 }
 
 function removeAcceptedDeviceType(typeName) {
-    const isDefaultType = DEFAULT_DEVICE_TYPES.some((defaultType) => normalizeTypeValue(defaultType) === normalizeTypeValue(typeName));
-    if (isDefaultType) {
-        showStatus(t('Standardtypen können nicht entfernt werden.', 'Default types cannot be removed.'), true);
+    const normalizedType = normalizeTypeValue(typeName);
+    const matchedType = managedDeviceTypes.find((entry) => normalizeTypeValue(entry) === normalizedType);
+    if (!matchedType) {
+        showDeleteFeedback(
+            t('Gerätetyp konnte nicht entfernt werden.', 'Device type could not be removed.'),
+            true
+        );
         return;
     }
 
-    managedDeviceTypes = managedDeviceTypes.filter((entry) => normalizeTypeValue(entry) !== normalizeTypeValue(typeName));
+    const referencedAssets = getInventoryUsageForDeviceType(typeName);
+    if (referencedAssets.length > 0) {
+        const linkedModels = getManagedModelsForType(typeName)
+            .filter((entry) => getInventoryUsageForModel(`${normalizeTypeValue(entry.type)}::${normalizeModelValue(entry.name)}`).length > 0)
+            .map((entry) => entry.name);
+        const linkedModelHint = linkedModels.length > 0
+            ? t(
+                ` Betroffene Typen: ${linkedModels.join(', ')}.`,
+                ` Affected models: ${linkedModels.join(', ')}.`
+            )
+            : '';
+        showDeleteFeedback(
+            t(
+                `Gerätetyp „${matchedType}“ kann nicht entfernt werden. Es sind noch ${referencedAssets.length} Asset(s) vorhanden.${linkedModelHint}`,
+                `Device type "${matchedType}" cannot be removed. ${referencedAssets.length} asset(s) still exist.${linkedModelHint}`
+            ),
+            true
+        );
+        return;
+    }
+
+    managedDeviceTypes = managedDeviceTypes.filter((entry) => normalizeTypeValue(entry) !== normalizedType);
+    managedDeviceTypes = uniqueSortedTypes(managedDeviceTypes);
     persistManagedDeviceTypes();
-    managedModels = managedModels.filter((entry) => normalizeTypeValue(entry.type) !== normalizeTypeValue(typeName));
+    managedModels = managedModels.filter((entry) => normalizeTypeValue(entry.type) !== normalizedType);
+    managedModels = uniqueSortedModels(managedModels);
     persistManagedModels();
-    if (editingTypeName && normalizeTypeValue(editingTypeName) === normalizeTypeValue(typeName)) {
+    if (editingTypeName && normalizeTypeValue(editingTypeName) === normalizedType) {
         clearTypeEditMode();
     }
-    renderAssetTypeAdminTable();
-    renderAssetModelTypeOptions();
-    renderAssetModelAdminTable();
-    showStatus(t('Gerätetyp entfernt.', 'Device type removed.'));
+    if (editingModelKey && editingModelKey.startsWith(`${normalizedType}::`)) {
+        clearModelEditMode();
+    }
+    refreshManagedMetadataViews();
+    showDeleteFeedback(
+        t(`Gerätetyp „${matchedType}“ wurde entfernt.`, `Device type "${matchedType}" was removed.`)
+    );
 }
 
 function setSettingsPanelExpanded(targetPanelId, expanded) {
@@ -1475,6 +1684,8 @@ async function importFile(file) {
         return;
     }
 
+    const { rejectedTypes, acceptedTypeCount, acceptedModelCount } = acceptUnknownImportMetadata(importedRows);
+
     const merged = [...assetRows];
     const knownAssetIds = new Set(merged.map(assetIdKeyFromRow));
     const importSeenAssetIds = new Set();
@@ -1487,6 +1698,20 @@ async function importFile(file) {
 
     importedRows.forEach((entry) => {
         const rowWithDefaults = applyDefaultsToRow(entry.row, inventoryDefaults);
+
+        if (rowWithDefaults.type && rejectedTypes.has(normalizeTypeValue(rowWithDefaults.type))) {
+            invalid += 1;
+            reportRows.push({
+                rowNumber: entry.rowNumber,
+                status: 'invalid',
+                details: t(
+                    `Gerätetyp nicht übernommen: ${rowWithDefaults.type}`,
+                    `Device type not accepted: ${rowWithDefaults.type}`
+                )
+            });
+            return;
+        }
+
         const rowErrors = validateRowData(rowWithDefaults);
 
         if (rowErrors.length > 0) {
@@ -1548,15 +1773,17 @@ async function importFile(file) {
     }
 
     assetRows = merged;
+    syncManagedMetadataFromRows(assetRows);
     refreshFilterOptions();
     resetToFirstPage();
     renderTable();
     renderValidationReport(reportRows);
+    refreshManagedMetadataViews();
 
     showStatus(
         t(
-            `${added} Einträge importiert, ${duplicates} Duplikate, ${invalid} ungültig.`,
-            `${added} rows imported, ${duplicates} duplicates, ${invalid} invalid.`
+            `${added} Einträge importiert, ${duplicates} Duplikate, ${invalid} ungültig.${acceptedTypeCount || acceptedModelCount ? ` ${acceptedTypeCount} Gerätetyp(en) und ${acceptedModelCount} Typ(en) ergänzt.` : ''}`,
+            `${added} rows imported, ${duplicates} duplicates, ${invalid} invalid.${acceptedTypeCount || acceptedModelCount ? ` Added ${acceptedTypeCount} device type(s) and ${acceptedModelCount} model(s).` : ''}`
         )
     );
 }
@@ -1800,12 +2027,14 @@ async function bootstrapRowsAndDefaults() {
         db.close();
 
         assetRows = rows;
+        syncManagedMetadataFromRows(assetRows);
         refreshFilterOptions();
         resetToFirstPage();
         renderTable();
         applyDefaultsToInputs(inventoryDefaults);
         renderDefaultsTable();
         renderAssetAdminTexts();
+        refreshManagedMetadataViews();
 
         showStatus(
             clearedNow
@@ -1871,6 +2100,7 @@ async function handleClearInventory() {
         db.close();
 
         assetRows = [];
+        clearManagedMetadata();
         selectedFile = null;
         if (fileInput) {
             fileInput.value = '';
@@ -1888,7 +2118,7 @@ async function handleClearInventory() {
         resetToFirstPage();
         renderTable();
         renderValidationReport([]);
-        showStatus(t('Alle Datensätze wurden gelöscht.', 'All records were deleted.'));
+        showStatus(t('Alle Datensätze sowie Gerätetypen und Typen wurden gelöscht.', 'All records, device types, and models were deleted.'));
     } catch {
         showStatus(t('Datensätze konnten nicht gelöscht werden.', 'Could not delete records.'), true);
     }

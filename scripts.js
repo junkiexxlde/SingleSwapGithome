@@ -260,12 +260,8 @@ const INVENTORY_REQUIRED_STORES = [INVENTORY_STORE, INVENTORY_DEFAULTS_STORE, IN
 const MANAGED_DEVICE_TYPES_KEY = 'mdmtool_managed_device_types_v1';
 const MANAGED_MODELS_KEY = 'mdmtool_managed_models_v1';
 const SURFACE_STYLE_STORAGE_KEY = 'surfaceStyle';
-const DEFAULT_DEVICE_TYPES = ['iPhone', 'iPad', 'MacBook'];
-const CANONICAL_DEVICE_TYPE_MAP = {
-    iphone: 'iPhone',
-    ipad: 'iPad',
-    macbook: 'MacBook'
-};
+const DEFAULT_DEVICE_TYPES = [];
+const CANONICAL_DEVICE_TYPE_MAP = {};
 let inventoryAssets = [];
 let versionFilterRefreshers = [];
 
@@ -411,15 +407,18 @@ function normalizeTypeToken(value) {
 }
 
 function canonicalDeviceTypeName(value) {
-    const normalized = normalizeTypeToken(value);
-    return CANONICAL_DEVICE_TYPE_MAP[normalized] || String(value || '').trim();
+    return String(value || '').trim().replace(/\s+/g, ' ');
 }
 
 function loadManagedDeviceTypes() {
     try {
         const raw = localStorage.getItem(MANAGED_DEVICE_TYPES_KEY);
         const parsed = raw ? JSON.parse(raw) : [];
-        const source = [...DEFAULT_DEVICE_TYPES, ...(Array.isArray(parsed) ? parsed : [])];
+        const source = [
+            ...(Array.isArray(parsed) ? parsed : []),
+            ...loadManagedModels().map((entry) => entry?.type),
+            ...inventoryAssets.map((asset) => asset?.type)
+        ];
         const seen = new Set();
         const values = [];
 
@@ -438,7 +437,7 @@ function loadManagedDeviceTypes() {
 
         return values.sort((left, right) => left.localeCompare(right, undefined, { sensitivity: 'base' }));
     } catch {
-        return [...DEFAULT_DEVICE_TYPES];
+        return [];
     }
 }
 
@@ -465,15 +464,18 @@ function loadManagedModels() {
     try {
         const raw = localStorage.getItem(MANAGED_MODELS_KEY);
         const parsed = raw ? JSON.parse(raw) : [];
-        if (!Array.isArray(parsed)) {
-            return [];
-        }
+        const source = Array.isArray(parsed) ? [...parsed] : [];
+        inventoryAssets.forEach((asset) => {
+            if (asset?.type && asset?.version) {
+                source.push({ type: asset.type, name: asset.version });
+            }
+        });
 
         const seen = new Set();
         const output = [];
-        parsed.forEach((entry) => {
+        source.forEach((entry) => {
             const type = canonicalDeviceTypeName(entry?.type);
-            const name = formatCanonicalModelLabel(entry?.name);
+            const name = String(entry?.name || '').trim().replace(/\s+/g, ' ');
             if (!type || !name) {
                 return;
             }
@@ -500,7 +502,11 @@ function syncManagedTypeOptions() {
             return;
         }
 
-        Array.from(selectEl.querySelectorAll('option[data-managed-type="1"]')).forEach((option) => option.remove());
+        Array.from(selectEl.querySelectorAll('option')).forEach((option) => {
+            if (option.value !== '') {
+                option.remove();
+            }
+        });
         const existingKeys = new Set(Array.from(selectEl.options).map((option) => normalizeTypeToken(option.value)));
 
         managedTypes.forEach((typeName) => {
@@ -3202,16 +3208,6 @@ function filterVersionOptions(typeSelectId, versionSelectId) {
             valuesInSelect.add(normalizeModelToken(model));
         });
 
-        const visibleOptions = Array.from(versionSelect.options).filter((option) => option.value !== '' && !option.hidden);
-        if (selectedType && visibleOptions.length === 0) {
-            const fallbackOption = document.createElement('option');
-            fallbackOption.value = selectedType;
-            fallbackOption.textContent = selectedType;
-            fallbackOption.setAttribute('data-type', selectedType);
-            fallbackOption.setAttribute('data-dynamic-version', '1');
-            versionSelect.appendChild(fallbackOption);
-        }
-        
         const exactMatch = Array.from(versionSelect.options).find((option) => option.value === currentValue && !option.hidden);
         const normalizedMatch = Array.from(versionSelect.options).find((option) => (
             !option.hidden && normalizeModelToken(option.value) === normalizeModelToken(currentValue)
