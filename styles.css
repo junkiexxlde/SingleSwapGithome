@@ -44,6 +44,8 @@
     --surface-alt-shadow: 0 10px 28px rgba(26, 38, 48, 0.08);
     --surface-alt-shadow-strong: 0 16px 34px rgba(26, 38, 48, 0.1);
     --surface-alt-highlight: rgba(93, 125, 159, 0.08);
+    --topbar-offset: 70px;
+    --asset-modal-gap: 16px;
 }
 
 html {
@@ -113,7 +115,7 @@ body {
 }
 
 body.has-topbar {
-    padding-top: 96px;
+    padding-top: var(--topbar-offset);
 }
 
 .app-version-badge {
@@ -1664,16 +1666,38 @@ h2 {
     color: var(--accent-color);
 }
 
-.asset-detail-modal {
+.modal.asset-detail-modal {
     z-index: 2200;
+    top: var(--topbar-offset);
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    height: auto;
+    padding: 0;
+    overflow-y: auto;
+    align-items: flex-start;
+    justify-content: center;
 }
 
-.asset-detail-modal-content {
-    width: min(92vw, 900px);
-    max-width: 900px;
-    max-height: 88vh;
+.modal.asset-detail-modal::before {
+    content: none;
+}
+
+.asset-detail-modal .asset-detail-modal-content {
+    margin: 0 auto;
+    width: 94%;
+    max-width: none;
+    min-height: calc(100vh - var(--topbar-offset));
+    min-height: calc(100dvh - var(--topbar-offset));
+    height: calc(100vh - var(--topbar-offset));
+    height: calc(100dvh - var(--topbar-offset));
+    max-height: calc(100vh - var(--topbar-offset));
+    max-height: calc(100dvh - var(--topbar-offset));
     overflow-y: auto;
     gap: 1rem;
+    flex: 1 1 auto;
+    border-radius: 12px;
 }
 
 .asset-detail-modal-header {
@@ -1786,7 +1810,7 @@ h2 {
     height: 36px;
     border: 1px solid #b6b6b6;
     border-radius: 999px;
-    background: #f5f5f5;
+    background: #1b2a38;
     color: #222;
     font-size: 1.45rem;
     line-height: 1;
@@ -1842,8 +1866,7 @@ h2 {
         min-width: 640px;
     }
 
-    .asset-detail-modal-content {
-        width: min(96vw, 900px);
+    .asset-detail-modal .asset-detail-modal-content {
         padding: 16px;
     }
 
@@ -2664,6 +2687,10 @@ textarea {
 }
 
 @media (max-width: 768px) {
+    :root {
+        --topbar-offset: 92px;
+    }
+
     .subpage-layout,
     .overview-page .subpage-layout,
     .asset-page .subpage-layout,
@@ -2707,7 +2734,7 @@ textarea {
     }
 
     body.has-topbar {
-        padding-top: 92px;
+        padding-top: var(--topbar-offset);
     }
 
     .topbar {
@@ -2897,12 +2924,16 @@ textarea {
 
 /* Small devices (tablets and smaller) */
 @media (max-width: 600px) {
+    :root {
+        --topbar-offset: 88px;
+    }
+
     body {
         padding: 10px;
     }
 
     body.has-topbar {
-        padding-top: 88px;
+        padding-top: var(--topbar-offset);
     }
     
     .container {
@@ -3046,8 +3077,12 @@ textarea {
 }
 
 @media (max-width: 480px) {
+    :root {
+        --topbar-offset: 84px;
+    }
+
     body.has-topbar {
-        padding-top: 84px;
+        padding-top: var(--topbar-offset);
     }
 
     .topbar {

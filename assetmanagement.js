@@ -760,7 +760,7 @@ function openAssetDetailModal(assetIdKey) {
 
     activeAssetDetailId = assetIdKey;
     renderAssetDetailModal(row);
-    assetDetailModal.style.display = 'block';
+    assetDetailModal.style.display = 'flex';
     assetDetailModal.setAttribute('aria-hidden', 'false');
 }
 
@@ -2179,7 +2179,7 @@ function bindEvents() {
     }
 
     document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && assetDetailModal && assetDetailModal.style.display === 'block') {
+        if (event.key === 'Escape' && assetDetailModal && assetDetailModal.getAttribute('aria-hidden') === 'false') {
             closeAssetDetailModal();
         }
     });
