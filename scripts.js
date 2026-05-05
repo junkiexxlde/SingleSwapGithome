@@ -502,6 +502,8 @@ function syncManagedTypeOptions() {
             return;
         }
 
+        const currentValue = selectEl.value;
+
         Array.from(selectEl.querySelectorAll('option')).forEach((option) => {
             if (option.value !== '') {
                 option.remove();
@@ -522,6 +524,9 @@ function syncManagedTypeOptions() {
             selectEl.appendChild(option);
             existingKeys.add(key);
         });
+
+        const preservedOption = Array.from(selectEl.options).find((option) => option.value === currentValue);
+        selectEl.value = preservedOption ? currentValue : '';
     });
 }
 

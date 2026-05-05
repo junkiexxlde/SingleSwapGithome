@@ -3,7 +3,9 @@ Bug Tracker
 Indem Modal zur Anzeige der Dten eines assets in assetmangement.html können bestimmte werte geändert werden. Diese Werte werden aber derzeit nur ... [erledigt]
 
 The main logic for editing "Categories and Types in the Assetmanagement needs a rework. No changes on the design or the generall actions needed but a Device Type can not be deleted as long as an associated Type exists that has associated Assets/e.g. Database entries. Same with Types/Models: If an asset of a Type is in the database, the type can not be deleted.
-on pressing the delete Button a popup with a coherant short messeage and a message in "asset Status should appear. right now this partiali works, but sometimes no messade is shown or an emty tipe is not removed
+on pressing the delete Button a popup with a coherant short messeage and a message in "asset Status should appear. right now this partiali works, but sometimes no messade is shown or an emty tipe is not removed [erledigt]
 
 
-When editing data like Device Type, Model, Asset ID, Serial, Number make sure the changes are made where ever these values are used or displayed. 
+When editing data like Device Type, Model, Asset ID, Serial, Number make sure the changes are made where ever these values are used or displayed. [erledigt]
+
+neuer Bug in single swap, irgendwo werden die Felde von Old und new gegenseitig beeinflusst, derzeit muss man erst alle felder in new auswählen ansonsten rsetten sich die groben werte in old
