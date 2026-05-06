@@ -713,6 +713,7 @@ function setLanguage(lang) {
     }
 
     renderTopbarBreadcrumb(lang);
+    updateSingleswapFullscreenControls();
 }
 
 function setSurfaceStyle(style) {
@@ -799,6 +800,8 @@ function closeNavDrawer() {
     if (backdrop) {
         backdrop.classList.add('hidden');
     }
+
+    updateSingleswapFullscreenControls();
 }
 
 function toggleNavDrawer() {
@@ -814,6 +817,8 @@ function toggleNavDrawer() {
     if (isOpen) {
         document.getElementById('settings-menu')?.classList.add('hidden');
     }
+
+    updateSingleswapFullscreenControls();
 }
 
 function toggleSettingsMenu() {
@@ -827,6 +832,172 @@ function toggleSettingsMenu() {
     if (shouldOpen) {
         closeNavDrawer();
     }
+
+    updateSingleswapFullscreenControls();
+}
+
+function getSingleswapActionLabel(action, isActive) {
+    if (action === 'settings') {
+        return isActive
+            ? (currentLanguage === 'en' ? 'Close settings' : 'Einstellungen schließen')
+            : (currentLanguage === 'en' ? 'Open settings' : 'Einstellungen öffnen');
+    }
+
+    return isActive
+        ? (currentLanguage === 'en' ? 'Exit fullscreen mode' : 'Vollbildmodus verlassen')
+        : (currentLanguage === 'en' ? 'Enter fullscreen mode' : 'Vollbildmodus aktivieren');
+}
+
+function isSingleswapFullscreenSupported(shell) {
+    return Boolean(
+        shell
+        && (
+            document.fullscreenEnabled
+            || document.webkitFullscreenEnabled
+            || shell.requestFullscreen
+            || shell.webkitRequestFullscreen
+        )
+    );
+}
+
+function isSingleswapFullscreenActive(shell) {
+    return document.fullscreenElement === shell || document.webkitFullscreenElement === shell;
+}
+
+function ensureSingleswapFullscreenToolbar() {
+    const shell = document.querySelector('.singleswap-shell');
+    if (!shell) {
+        return { shell: null, settingsButton: null, fullscreenButton: null };
+    }
+
+    shell.classList.add('app-fullscreen-shell');
+
+    const settingsMenu = document.getElementById('settings-menu');
+    if (settingsMenu && settingsMenu.parentElement !== shell) {
+        shell.appendChild(settingsMenu);
+    }
+
+    let toolbar = shell.querySelector('.nav-shell-toolbar, .app-fullscreen-shell-toolbar');
+    if (!toolbar) {
+        toolbar = document.createElement('div');
+        toolbar.className = 'nav-shell-toolbar app-fullscreen-shell-toolbar';
+        shell.insertBefore(toolbar, shell.firstChild);
+    } else {
+        toolbar.classList.add('app-fullscreen-shell-toolbar');
+    }
+
+    let settingsButton = toolbar.querySelector('[data-fullscreen-role="settings-toggle"]');
+    if (!settingsButton && settingsMenu) {
+        settingsButton = document.createElement('button');
+        settingsButton.type = 'button';
+        settingsButton.className = 'toolbar-button nav-shell-settings-toggle';
+        settingsButton.textContent = '⚙';
+        settingsButton.setAttribute('data-fullscreen-role', 'settings-toggle');
+        toolbar.appendChild(settingsButton);
+    }
+
+    let fullscreenButton = toolbar.querySelector('[data-fullscreen-role="fullscreen-toggle"]');
+    if (!fullscreenButton && isSingleswapFullscreenSupported(shell)) {
+        fullscreenButton = document.createElement('button');
+        fullscreenButton.type = 'button';
+        fullscreenButton.className = 'toolbar-button nav-shell-fullscreen-toggle';
+        fullscreenButton.setAttribute('data-fullscreen-role', 'fullscreen-toggle');
+        toolbar.appendChild(fullscreenButton);
+    }
+
+    return { shell, settingsButton, fullscreenButton };
+}
+
+function updateSingleswapFullscreenControls() {
+    const { shell, settingsButton, fullscreenButton } = ensureSingleswapFullscreenToolbar();
+    if (!shell) {
+        return;
+    }
+
+    const settingsMenu = document.getElementById('settings-menu');
+    const settingsOpen = Boolean(settingsMenu) && !settingsMenu.classList.contains('hidden');
+    const isFullscreen = isSingleswapFullscreenActive(shell);
+
+    shell.classList.toggle('is-fullscreen', isFullscreen);
+    document.body.classList.toggle('page-fullscreen-active', isFullscreen);
+
+    if (settingsButton) {
+        const settingsLabel = getSingleswapActionLabel('settings', settingsOpen);
+        settingsButton.setAttribute('aria-label', settingsLabel);
+        settingsButton.setAttribute('title', settingsLabel);
+        settingsButton.setAttribute('aria-pressed', settingsOpen ? 'true' : 'false');
+    }
+
+    if (fullscreenButton) {
+        const fullscreenLabel = getSingleswapActionLabel('fullscreen', isFullscreen);
+        fullscreenButton.textContent = isFullscreen ? '🗗' : '⛶';
+        fullscreenButton.setAttribute('aria-label', fullscreenLabel);
+        fullscreenButton.setAttribute('title', fullscreenLabel);
+        fullscreenButton.setAttribute('aria-pressed', isFullscreen ? 'true' : 'false');
+        fullscreenButton.classList.toggle('hidden', !isSingleswapFullscreenSupported(shell));
+    }
+}
+
+function toggleSingleswapSettingsMenu() {
+    const settingsMenu = document.getElementById('settings-menu');
+    if (!settingsMenu) {
+        return;
+    }
+
+    closeNavDrawer();
+    settingsMenu.classList.toggle('hidden');
+    updateSingleswapFullscreenControls();
+}
+
+async function toggleSingleswapFullscreen() {
+    const { shell } = ensureSingleswapFullscreenToolbar();
+    if (!shell || !isSingleswapFullscreenSupported(shell)) {
+        return;
+    }
+
+    try {
+        if (isSingleswapFullscreenActive(shell)) {
+            if (typeof document.exitFullscreen === 'function') {
+                await document.exitFullscreen();
+            } else if (typeof document.webkitExitFullscreen === 'function') {
+                document.webkitExitFullscreen();
+            }
+        } else if (typeof shell.requestFullscreen === 'function') {
+            await shell.requestFullscreen();
+        } else if (typeof shell.webkitRequestFullscreen === 'function') {
+            shell.webkitRequestFullscreen();
+        }
+    } catch (error) {
+        console.error('Singleswap fullscreen toggle failed:', error);
+    } finally {
+        updateSingleswapFullscreenControls();
+    }
+}
+
+function initSingleswapFullscreenShell() {
+    const { settingsButton, fullscreenButton } = ensureSingleswapFullscreenToolbar();
+
+    if (settingsButton && !settingsButton.hasAttribute('data-fullscreen-bound')) {
+        settingsButton.setAttribute('data-fullscreen-bound', 'true');
+        settingsButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            toggleSingleswapSettingsMenu();
+        });
+    }
+
+    if (fullscreenButton && !fullscreenButton.hasAttribute('data-fullscreen-bound')) {
+        fullscreenButton.setAttribute('data-fullscreen-bound', 'true');
+        fullscreenButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            toggleSingleswapFullscreen();
+        });
+    }
+
+    document.addEventListener('fullscreenchange', updateSingleswapFullscreenControls);
+    document.addEventListener('webkitfullscreenchange', updateSingleswapFullscreenControls);
+    updateSingleswapFullscreenControls();
 }
 
 const menuToggle = document.getElementById('menu-toggle');
@@ -849,14 +1020,18 @@ document.querySelectorAll('.drawer-nav a').forEach((link) => {
 
 document.addEventListener('click', (event) => {
     const settingsMenu = document.getElementById('settings-menu');
+    const settingsShortcut = event.target.closest('[data-fullscreen-role="settings-toggle"]');
     if (!settingsMenu || settingsMenu.classList.contains('hidden')) {
         return;
     }
 
-    if (!settingsMenu.contains(event.target) && event.target !== settingsToggle) {
+    if (!settingsMenu.contains(event.target) && event.target !== settingsToggle && !settingsShortcut) {
         settingsMenu.classList.add('hidden');
+        updateSingleswapFullscreenControls();
     }
 });
+
+initSingleswapFullscreenShell();
 
 window.addEventListener('storage', (event) => {
     if (event.key === 'theme' && event.newValue) {

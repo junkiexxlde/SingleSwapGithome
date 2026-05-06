@@ -83,6 +83,11 @@ const assetFilterReset = document.getElementById('assetFilterReset');
 const assetPagination = document.getElementById('assetPagination');
 const assetPaginationInfo = document.getElementById('assetPaginationInfo');
 const assetPaginationPages = document.getElementById('assetPaginationPages');
+const assetNavShell = document.querySelector('.asset-page .nav-shell');
+const settingsMenu = document.getElementById('settings-menu');
+const globalSettingsToggle = document.getElementById('settings-toggle');
+const assetSettingsShortcut = document.getElementById('assetSettingsShortcut');
+const assetFullscreenToggle = document.getElementById('assetFullscreenToggle');
 
 const defaultAssignedInput = document.getElementById('defaultAssigned');
 const defaultManagedByInput = document.getElementById('defaultManagedBy');
@@ -115,6 +120,140 @@ const assetAdminAcceptModelButton = document.getElementById('assetAdminAcceptMod
 const assetAdminCancelModelEditButton = document.getElementById('assetAdminCancelModelEditButton');
 const assetModelAdminTableHead = document.querySelector('#assetModelAdminTable thead');
 const assetModelAdminTableBody = document.querySelector('#assetModelAdminTable tbody');
+
+function mountAssetOverlayElements() {
+    if (!assetNavShell) {
+        return;
+    }
+
+    if (settingsMenu && settingsMenu.parentElement !== assetNavShell) {
+        assetNavShell.appendChild(settingsMenu);
+    }
+
+    if (assetDetailModal && assetDetailModal.parentElement !== assetNavShell) {
+        assetNavShell.appendChild(assetDetailModal);
+    }
+}
+
+function isSettingsMenuOpen() {
+    return Boolean(settingsMenu) && !settingsMenu.classList.contains('hidden');
+}
+
+function getAssetSettingsShortcutLabel(isOpen) {
+    return isOpen
+        ? t('Einstellungen schließen', 'Close settings')
+        : t('Einstellungen öffnen', 'Open settings');
+}
+
+function updateAssetSettingsShortcut() {
+    if (!assetSettingsShortcut) {
+        return;
+    }
+
+    const isOpen = isSettingsMenuOpen();
+    const label = getAssetSettingsShortcutLabel(isOpen);
+
+    assetSettingsShortcut.setAttribute('aria-label', label);
+    assetSettingsShortcut.setAttribute('title', label);
+    assetSettingsShortcut.setAttribute('aria-pressed', isOpen ? 'true' : 'false');
+}
+
+function isFullscreenSupported() {
+    return Boolean(
+        document.fullscreenEnabled
+        || document.webkitFullscreenEnabled
+        || assetNavShell?.requestFullscreen
+        || assetNavShell?.webkitRequestFullscreen
+    );
+}
+
+function isAssetShellFullscreen() {
+    return document.fullscreenElement === assetNavShell || document.webkitFullscreenElement === assetNavShell;
+}
+
+function getAssetFullscreenToggleLabel(isFullscreen) {
+    return isFullscreen
+        ? t('Vollbildmodus verlassen', 'Exit fullscreen mode')
+        : t('Vollbildmodus aktivieren', 'Enter fullscreen mode');
+}
+
+function updateAssetFullscreenToggle() {
+    if (assetNavShell) {
+        const isFullscreen = isAssetShellFullscreen();
+        assetNavShell.classList.toggle('is-fullscreen', isFullscreen);
+        document.body.classList.toggle('asset-fullscreen-active', isFullscreen);
+    }
+
+    if (!assetFullscreenToggle) {
+        return;
+    }
+
+    const isFullscreen = isAssetShellFullscreen();
+    const label = getAssetFullscreenToggleLabel(isFullscreen);
+
+    assetFullscreenToggle.textContent = isFullscreen ? '🗗' : '⛶';
+    assetFullscreenToggle.setAttribute('aria-label', label);
+    assetFullscreenToggle.setAttribute('title', label);
+    assetFullscreenToggle.setAttribute('aria-pressed', isFullscreen ? 'true' : 'false');
+}
+
+function toggleAssetSettingsMenu() {
+    if (!settingsMenu) {
+        return;
+    }
+
+    if (typeof window.closeNavDrawer === 'function') {
+        window.closeNavDrawer();
+    }
+
+    settingsMenu.classList.toggle('hidden');
+    updateAssetSettingsShortcut();
+}
+
+async function requestAssetShellFullscreen() {
+    if (!assetNavShell) {
+        return;
+    }
+
+    if (typeof assetNavShell.requestFullscreen === 'function') {
+        await assetNavShell.requestFullscreen();
+        return;
+    }
+
+    if (typeof assetNavShell.webkitRequestFullscreen === 'function') {
+        assetNavShell.webkitRequestFullscreen();
+    }
+}
+
+async function exitAssetShellFullscreen() {
+    if (typeof document.exitFullscreen === 'function') {
+        await document.exitFullscreen();
+        return;
+    }
+
+    if (typeof document.webkitExitFullscreen === 'function') {
+        document.webkitExitFullscreen();
+    }
+}
+
+async function toggleAssetShellFullscreen() {
+    if (!assetNavShell || !isFullscreenSupported()) {
+        return;
+    }
+
+    try {
+        if (isAssetShellFullscreen()) {
+            await exitAssetShellFullscreen();
+        } else {
+            await requestAssetShellFullscreen();
+        }
+    } catch (error) {
+        console.error('Asset fullscreen toggle failed:', error);
+        showStatus(t('Vollbildmodus konnte nicht gewechselt werden.', 'Unable to change fullscreen mode.'), true);
+    } finally {
+        updateAssetFullscreenToggle();
+    }
+}
 
 function getCurrentLanguage() {
     return localStorage.getItem('language') || 'de';
@@ -2125,6 +2264,28 @@ async function handleClearInventory() {
 }
 
 function bindEvents() {
+    mountAssetOverlayElements();
+
+    if (assetSettingsShortcut) {
+        updateAssetSettingsShortcut();
+        assetSettingsShortcut.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            toggleAssetSettingsMenu();
+        });
+    }
+
+    if (assetFullscreenToggle) {
+        if (!isFullscreenSupported()) {
+            assetFullscreenToggle.classList.add('hidden');
+        } else {
+            updateAssetFullscreenToggle();
+            assetFullscreenToggle.addEventListener('click', () => {
+                toggleAssetShellFullscreen();
+            });
+        }
+    }
+
     if (settingsDefaultsTab) {
         settingsDefaultsTab.addEventListener('click', () => toggleSettingsPanel('assetSettingsDefaultsPanel'));
     }
@@ -2414,7 +2575,21 @@ function bindEvents() {
         }
     });
 
+    document.addEventListener('click', () => {
+        updateAssetSettingsShortcut();
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+        updateAssetFullscreenToggle();
+    });
+
+    document.addEventListener('webkitfullscreenchange', () => {
+        updateAssetFullscreenToggle();
+    });
+
     document.addEventListener('mdm-language-changed', () => {
+        updateAssetFullscreenToggle();
+        updateAssetSettingsShortcut();
         refreshFilterOptions();
         renderTable();
         renderValidationReport(lastValidationReport);

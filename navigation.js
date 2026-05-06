@@ -302,6 +302,8 @@ function closeNavDrawer() {
     if (backdrop) {
         backdrop.classList.add('hidden');
     }
+
+    updateSharedFullscreenControls();
 }
 
 function toggleNavDrawer() {
@@ -317,6 +319,8 @@ function toggleNavDrawer() {
     if (isOpen) {
         document.getElementById('settings-menu')?.classList.add('hidden');
     }
+
+    updateSharedFullscreenControls();
 }
 
 function toggleSettingsMenu() {
@@ -330,6 +334,218 @@ function toggleSettingsMenu() {
     if (shouldOpen) {
         closeNavDrawer();
     }
+
+    updateSharedFullscreenControls();
+}
+
+function getSharedFullscreenShell() {
+    return document.querySelector('.nav-shell') || document.querySelector('.subpage-layout');
+}
+
+function getSharedActionLabel(action, isActive) {
+    const lang = localStorage.getItem('language') || 'de';
+
+    if (action === 'settings') {
+        return isActive
+            ? (lang === 'en' ? 'Close settings' : 'Einstellungen schließen')
+            : (lang === 'en' ? 'Open settings' : 'Einstellungen öffnen');
+    }
+
+    return isActive
+        ? (lang === 'en' ? 'Exit fullscreen mode' : 'Vollbildmodus verlassen')
+        : (lang === 'en' ? 'Enter fullscreen mode' : 'Vollbildmodus aktivieren');
+}
+
+function isSharedFullscreenSupported(shell) {
+    return Boolean(
+        shell
+        && (
+            document.fullscreenEnabled
+            || document.webkitFullscreenEnabled
+            || shell.requestFullscreen
+            || shell.webkitRequestFullscreen
+        )
+    );
+}
+
+function isSharedFullscreenActive(shell = getSharedFullscreenShell()) {
+    return document.fullscreenElement === shell || document.webkitFullscreenElement === shell;
+}
+
+function mountSharedFullscreenOverlays(shell) {
+    if (!shell) {
+        return;
+    }
+
+    const settingsMenu = document.getElementById('settings-menu');
+    if (settingsMenu && settingsMenu.parentElement !== shell) {
+        shell.appendChild(settingsMenu);
+    }
+
+    document.querySelectorAll('body > .modal').forEach((modal) => {
+        if (modal.parentElement !== shell) {
+            shell.appendChild(modal);
+        }
+    });
+}
+
+function ensureSharedFullscreenToolbar(shell) {
+    if (!shell) {
+        return { toolbar: null, settingsButton: null, fullscreenButton: null };
+    }
+
+    let toolbar = shell.querySelector('.nav-shell-toolbar, .app-fullscreen-shell-toolbar');
+    if (!toolbar) {
+        toolbar = document.createElement('div');
+        toolbar.className = 'nav-shell-toolbar app-fullscreen-shell-toolbar';
+        shell.insertBefore(toolbar, shell.firstChild);
+    } else {
+        toolbar.classList.add('app-fullscreen-shell-toolbar');
+    }
+
+    const settingsMenu = document.getElementById('settings-menu');
+    let settingsButton = toolbar.querySelector('[data-fullscreen-role="settings-toggle"]');
+    if (!settingsButton) {
+        settingsButton = toolbar.querySelector('#assetSettingsShortcut');
+        if (settingsButton) {
+            settingsButton.setAttribute('data-fullscreen-role', 'settings-toggle');
+        }
+    }
+
+    if (!settingsButton && settingsMenu) {
+        settingsButton = document.createElement('button');
+        settingsButton.type = 'button';
+        settingsButton.className = 'toolbar-button nav-shell-settings-toggle';
+        settingsButton.textContent = '⚙';
+        settingsButton.setAttribute('data-fullscreen-role', 'settings-toggle');
+        toolbar.appendChild(settingsButton);
+    }
+
+    let fullscreenButton = toolbar.querySelector('[data-fullscreen-role="fullscreen-toggle"]');
+    if (!fullscreenButton) {
+        fullscreenButton = toolbar.querySelector('#assetFullscreenToggle');
+        if (fullscreenButton) {
+            fullscreenButton.setAttribute('data-fullscreen-role', 'fullscreen-toggle');
+        }
+    }
+
+    if (!fullscreenButton && isSharedFullscreenSupported(shell)) {
+        fullscreenButton = document.createElement('button');
+        fullscreenButton.type = 'button';
+        fullscreenButton.className = 'toolbar-button nav-shell-fullscreen-toggle';
+        fullscreenButton.setAttribute('data-fullscreen-role', 'fullscreen-toggle');
+        toolbar.appendChild(fullscreenButton);
+    }
+
+    return { toolbar, settingsButton, fullscreenButton };
+}
+
+function updateSharedFullscreenControls() {
+    const shell = getSharedFullscreenShell();
+    if (!shell) {
+        return;
+    }
+
+    const { settingsButton, fullscreenButton } = ensureSharedFullscreenToolbar(shell);
+    const settingsMenu = document.getElementById('settings-menu');
+    const isFullscreen = isSharedFullscreenActive(shell);
+    const settingsOpen = Boolean(settingsMenu) && !settingsMenu.classList.contains('hidden');
+
+    shell.classList.add('app-fullscreen-shell');
+    shell.classList.toggle('is-fullscreen', isFullscreen);
+    document.body.classList.toggle('page-fullscreen-active', isFullscreen);
+
+    if (settingsButton) {
+        const settingsLabel = getSharedActionLabel('settings', settingsOpen);
+        settingsButton.setAttribute('aria-label', settingsLabel);
+        settingsButton.setAttribute('title', settingsLabel);
+        settingsButton.setAttribute('aria-pressed', settingsOpen ? 'true' : 'false');
+    }
+
+    if (fullscreenButton) {
+        const fullscreenLabel = getSharedActionLabel('fullscreen', isFullscreen);
+        fullscreenButton.textContent = isFullscreen ? '🗗' : '⛶';
+        fullscreenButton.setAttribute('aria-label', fullscreenLabel);
+        fullscreenButton.setAttribute('title', fullscreenLabel);
+        fullscreenButton.setAttribute('aria-pressed', isFullscreen ? 'true' : 'false');
+        fullscreenButton.classList.toggle('hidden', !isSharedFullscreenSupported(shell));
+    }
+}
+
+function toggleSharedSettingsMenu() {
+    const settingsMenu = document.getElementById('settings-menu');
+    if (!settingsMenu) {
+        return;
+    }
+
+    closeNavDrawer();
+    settingsMenu.classList.toggle('hidden');
+    updateSharedFullscreenControls();
+}
+
+async function toggleSharedFullscreen() {
+    const shell = getSharedFullscreenShell();
+    if (!shell || !isSharedFullscreenSupported(shell)) {
+        return;
+    }
+
+    try {
+        if (isSharedFullscreenActive(shell)) {
+            if (typeof document.exitFullscreen === 'function') {
+                await document.exitFullscreen();
+            } else if (typeof document.webkitExitFullscreen === 'function') {
+                document.webkitExitFullscreen();
+            }
+        } else if (typeof shell.requestFullscreen === 'function') {
+            await shell.requestFullscreen();
+        } else if (typeof shell.webkitRequestFullscreen === 'function') {
+            shell.webkitRequestFullscreen();
+        }
+    } catch (error) {
+        console.error('Fullscreen toggle failed:', error);
+    } finally {
+        updateSharedFullscreenControls();
+    }
+}
+
+function initSharedFullscreenShell() {
+    if (document.body.classList.contains('asset-page')) {
+        return;
+    }
+
+    const shell = getSharedFullscreenShell();
+    if (!shell) {
+        return;
+    }
+
+    shell.classList.add('app-fullscreen-shell');
+    mountSharedFullscreenOverlays(shell);
+
+    const { settingsButton, fullscreenButton } = ensureSharedFullscreenToolbar(shell);
+
+    if (settingsButton && !settingsButton.hasAttribute('data-fullscreen-bound')) {
+        settingsButton.setAttribute('data-fullscreen-bound', 'true');
+        settingsButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            toggleSharedSettingsMenu();
+        });
+    }
+
+    if (fullscreenButton && !fullscreenButton.hasAttribute('data-fullscreen-bound')) {
+        fullscreenButton.setAttribute('data-fullscreen-bound', 'true');
+        fullscreenButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            toggleSharedFullscreen();
+        });
+    }
+
+    document.addEventListener('fullscreenchange', updateSharedFullscreenControls);
+    document.addEventListener('webkitfullscreenchange', updateSharedFullscreenControls);
+    document.addEventListener('mdm-language-changed', updateSharedFullscreenControls);
+
+    updateSharedFullscreenControls();
 }
 
 function isWebOriginSupported() {
@@ -379,6 +595,7 @@ async function requestPersistentStorage() {
     setNavSurfaceStyle(initialSurfaceStyle);
     setNavLanguage(initialLanguage);
     requestPersistentStorage();
+    initSharedFullscreenShell();
 
     const deButton = document.getElementById('lang-de');
     const enButton = document.getElementById('lang-en');
@@ -415,12 +632,14 @@ async function requestPersistentStorage() {
 
     document.addEventListener('click', (event) => {
         const settingsMenu = document.getElementById('settings-menu');
+        const settingsShortcut = event.target.closest('[data-fullscreen-role="settings-toggle"]');
         if (!settingsMenu || settingsMenu.classList.contains('hidden')) {
             return;
         }
 
-        if (!settingsMenu.contains(event.target) && event.target !== settingsToggle) {
+        if (!settingsMenu.contains(event.target) && event.target !== settingsToggle && !settingsShortcut) {
             settingsMenu.classList.add('hidden');
+            updateSharedFullscreenControls();
         }
     });
 

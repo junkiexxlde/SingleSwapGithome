@@ -800,6 +800,96 @@ h2 {
     overflow-x: hidden;
 }
 
+.nav-shell-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.65rem;
+    margin-bottom: 1rem;
+}
+
+.app-fullscreen-shell-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.65rem;
+    margin-bottom: 1rem;
+}
+
+.nav-shell-settings-toggle,
+.nav-shell-fullscreen-toggle {
+    flex: 0 0 auto;
+    font-size: 1.05rem;
+}
+
+.app-fullscreen-shell:fullscreen,
+.app-fullscreen-shell:-webkit-full-screen,
+.nav-shell:fullscreen,
+.nav-shell:-webkit-full-screen {
+    width: 100vw;
+    max-width: none;
+    height: 100vh;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    padding: 1.5rem;
+    overflow: auto;
+    box-shadow: none;
+    animation: none;
+}
+
+.app-fullscreen-shell:fullscreen .app-fullscreen-shell-toolbar,
+.app-fullscreen-shell:-webkit-full-screen .app-fullscreen-shell-toolbar,
+.nav-shell:fullscreen .nav-shell-toolbar,
+.nav-shell:-webkit-full-screen .nav-shell-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    padding-bottom: 0.5rem;
+    background: var(--card-bg);
+}
+
+body.page-fullscreen-active .settings-menu {
+    top: 1rem;
+    right: 1rem;
+    z-index: 2400;
+    max-height: calc(100vh - 2rem);
+    max-height: calc(100dvh - 2rem);
+}
+
+body.page-fullscreen-active .modal {
+    z-index: 2500;
+}
+
+body.page-fullscreen-active .modal-content {
+    max-height: calc(100vh - 2rem);
+    max-height: calc(100dvh - 2rem);
+}
+
+.asset-page.asset-fullscreen-active .settings-menu {
+    top: 1rem;
+    right: 1rem;
+    z-index: 2400;
+    max-height: calc(100vh - 2rem);
+    max-height: calc(100dvh - 2rem);
+}
+
+.asset-page.asset-fullscreen-active .modal.asset-detail-modal {
+    top: 0;
+    z-index: 2500;
+}
+
+.asset-page.asset-fullscreen-active .asset-detail-modal .asset-detail-modal-content {
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100vh;
+    max-height: 100dvh;
+    border-radius: 0;
+}
+
 .nav-header {
     display: flex;
     justify-content: flex-end;
@@ -3849,6 +3939,18 @@ textarea {
 /* ===== OVERVIEW PAGE STYLES ===== */
 
 .overview-page .subpage-layout {
+    gap: 1.5rem;
+}
+
+.overview-page .nav-shell {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.overview-shell {
+    display: flex;
+    flex-direction: column;
     gap: 1.5rem;
 }
 

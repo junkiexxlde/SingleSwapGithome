@@ -37,54 +37,56 @@
 
     <div class="subpage-layout">
         <h1 class="subpage-heading" data-i18n="overview-heading">Übersicht</h1>
-        
-        <div class="overview-search-section card">
-            <h2 data-i18n="overview-search-title">Fälle durchsuchen</h2>
-            <div class="overview-search-container">
-                <div class="search-input-group">
-                    <label for="overviewSearchInput" data-i18n="overview-search-label">Suche nach Ticketnummer, Asset-ID (Alt oder Neu):</label>
-                    <div class="search-input-wrap">
-                        <span class="search-icon">
-                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="10" cy="10" r="6"></circle>
-                                <line x1="14" y1="14" x2="20" y2="20"></line>
-                            </svg>
-                        </span>
-                        <input 
-                            type="text" 
-                            id="overviewSearchInput" 
-                            class="overview-search-input" 
-                            placeholder="Ticketnummer oder Asset-ID eingeben..."
-                            aria-label="Search cases">
+
+        <main class="nav-shell overview-shell">
+            <div class="overview-search-section card">
+                <h2 data-i18n="overview-search-title">Fälle durchsuchen</h2>
+                <div class="overview-search-container">
+                    <div class="search-input-group">
+                        <label for="overviewSearchInput" data-i18n="overview-search-label">Suche nach Ticketnummer, Asset-ID (Alt oder Neu):</label>
+                        <div class="search-input-wrap">
+                            <span class="search-icon">
+                                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="10" cy="10" r="6"></circle>
+                                    <line x1="14" y1="14" x2="20" y2="20"></line>
+                                </svg>
+                            </span>
+                            <input 
+                                type="text" 
+                                id="overviewSearchInput" 
+                                class="overview-search-input" 
+                                placeholder="Ticketnummer oder Asset-ID eingeben..."
+                                aria-label="Search cases">
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <main class="card overview-content">
-            <div id="overviewStatus" class="overview-status-message" data-i18n="overview-loading">Laden...</div>
-            
-            <div id="overviewTableContainer" class="overview-table-container hidden">
-                <div class="overview-info" id="overviewResultCount"></div>
-                <table id="overviewTable" class="overview-table">
-                    <thead>
-                        <tr>
-                            <th data-i18n="overview-col-ticket">Ticketnummer</th>
-                            <th data-i18n="overview-col-old-device">Altes Gerät</th>
-                            <th data-i18n="overview-col-old-assetid">Asset-ID (Alt)</th>
-                            <th data-i18n="overview-col-new-device">Neues Gerät</th>
-                            <th data-i18n="overview-col-new-assetid">Asset-ID (Neu)</th>
-                            <th data-i18n="overview-col-date">Datum</th>
-                        </tr>
-                    </thead>
-                    <tbody id="overviewTableBody">
-                    </tbody>
-                </table>
-            </div>
+            <section class="card overview-content">
+                <div id="overviewStatus" class="overview-status-message" data-i18n="overview-loading">Laden...</div>
+                
+                <div id="overviewTableContainer" class="overview-table-container hidden">
+                    <div class="overview-info" id="overviewResultCount"></div>
+                    <table id="overviewTable" class="overview-table">
+                        <thead>
+                            <tr>
+                                <th data-i18n="overview-col-ticket">Ticketnummer</th>
+                                <th data-i18n="overview-col-old-device">Altes Gerät</th>
+                                <th data-i18n="overview-col-old-assetid">Asset-ID (Alt)</th>
+                                <th data-i18n="overview-col-new-device">Neues Gerät</th>
+                                <th data-i18n="overview-col-new-assetid">Asset-ID (Neu)</th>
+                                <th data-i18n="overview-col-date">Datum</th>
+                            </tr>
+                        </thead>
+                        <tbody id="overviewTableBody">
+                        </tbody>
+                    </table>
+                </div>
 
-            <div id="overviewNoResults" class="overview-no-results hidden" data-i18n="overview-no-results">
-                Keine Fälle gefunden. Erstellen Sie einen Neuen Fall.
-            </div>
+                <div id="overviewNoResults" class="overview-no-results hidden" data-i18n="overview-no-results">
+                    Keine Fälle gefunden. Erstellen Sie einen Neuen Fall.
+                </div>
+            </section>
         </main>
     </div>
 
