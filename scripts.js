@@ -135,10 +135,12 @@ translations.de['export-delivery-note-pdf-button'] = "Lieferschein als PDF expor
 translations.de['delivery-note-title'] = "Lieferschein";
 translations.de['swap-protocol-title'] = "Tauschprotokoll";
 translations.de['app-shell-title'] = "Mobile Device Warranty Management Tool";
+translations.de['back-home'] = "Zurück zur Startseite";
 translations.de['nav-home'] = "Startseite";
 translations.de['nav-new-case'] = "Neuen Fall anlegen";
 translations.de['nav-overview'] = "Übersicht";
 translations.de['nav-assets'] = "Assets verwalten";
+translations.de['nav-monthly-inventory'] = "Monatsinventur";
 translations.de['singleswap-settings-title'] = "Weitere Aktionen";
 translations.de['to-overview-button'] = "zur Übersicht";
 translations.de['appearance-settings-title'] = "Darstellung";
@@ -182,10 +184,12 @@ translations.en['export-delivery-note-pdf-button'] = "Export Delivery Note to PD
 translations.en['delivery-note-title'] = "Delivery Note";
 translations.en['swap-protocol-title'] = "Swap Protocol";
 translations.en['app-shell-title'] = "Mobile Device Warranty Management Tool";
+translations.en['back-home'] = "Back to Home";
 translations.en['nav-home'] = "Home";
 translations.en['nav-new-case'] = "Create New Case";
 translations.en['nav-overview'] = "Overview";
 translations.en['nav-assets'] = "Manage Assets";
+translations.en['nav-monthly-inventory'] = "Monthly Inventory";
 translations.en['singleswap-settings-title'] = "More Actions";
 translations.en['to-overview-button'] = "To Overview";
 translations.en['appearance-settings-title'] = "Appearance";
@@ -260,10 +264,218 @@ const INVENTORY_REQUIRED_STORES = [INVENTORY_STORE, INVENTORY_DEFAULTS_STORE, IN
 const MANAGED_DEVICE_TYPES_KEY = 'mdmtool_managed_device_types_v1';
 const MANAGED_MODELS_KEY = 'mdmtool_managed_models_v1';
 const SURFACE_STYLE_STORAGE_KEY = 'surfaceStyle';
+const FULLSCREEN_MODE_STORAGE_KEY = 'mdmtool_fullscreen_mode_v1';
+const FULLSCREEN_NAVIGATION_STORAGE_KEY = 'mdmtool_fullscreen_navigation_v1';
+const FULLSCREEN_NAVIGATION_MAX_AGE_MS = 15000;
 const DEFAULT_DEVICE_TYPES = [];
 const CANONICAL_DEVICE_TYPE_MAP = {};
 let inventoryAssets = [];
 let versionFilterRefreshers = [];
+
+function ensureFullscreenNavigationHelper() {
+    if (window.mdmFullscreenNavigation) {
+        return window.mdmFullscreenNavigation;
+    }
+
+    function readFullscreenNavigationState() {
+        try {
+            const rawState = sessionStorage.getItem(FULLSCREEN_NAVIGATION_STORAGE_KEY);
+            if (!rawState) {
+                return null;
+            }
+
+            const parsedState = JSON.parse(rawState);
+            const timestamp = Number(parsedState?.timestamp || 0);
+            if (!parsedState?.pending || !Number.isFinite(timestamp) || (Date.now() - timestamp) > FULLSCREEN_NAVIGATION_MAX_AGE_MS) {
+                sessionStorage.removeItem(FULLSCREEN_NAVIGATION_STORAGE_KEY);
+                return null;
+            }
+
+            return parsedState;
+        } catch (error) {
+            console.warn('Fullscreen navigation state could not be read:', error);
+            sessionStorage.removeItem(FULLSCREEN_NAVIGATION_STORAGE_KEY);
+            return null;
+        }
+    }
+
+    function rememberFullscreenForNavigation() {
+        try {
+            sessionStorage.setItem(FULLSCREEN_NAVIGATION_STORAGE_KEY, JSON.stringify({
+                pending: true,
+                timestamp: Date.now()
+            }));
+        } catch (error) {
+            console.warn('Fullscreen navigation state could not be stored:', error);
+        }
+    }
+
+    function clearFullscreenNavigationState() {
+        try {
+            sessionStorage.removeItem(FULLSCREEN_NAVIGATION_STORAGE_KEY);
+        } catch (error) {
+            console.warn('Fullscreen navigation state could not be cleared:', error);
+        }
+    }
+
+    function isInternalNavigationLink(link) {
+        if (!link || link.hasAttribute('download')) {
+            return false;
+        }
+
+        const rawHref = link.getAttribute('href');
+        if (!rawHref || rawHref.startsWith('#') || rawHref.startsWith('javascript:') || rawHref.startsWith('mailto:') || rawHref.startsWith('tel:')) {
+            return false;
+        }
+
+        if (link.target && link.target !== '_self') {
+            return false;
+        }
+
+        try {
+            const nextUrl = new URL(link.href, window.location.href);
+            if (nextUrl.origin !== window.location.origin) {
+                return false;
+            }
+
+            const isSameDocumentAnchor = nextUrl.pathname === window.location.pathname
+                && nextUrl.search === window.location.search
+                && nextUrl.hash;
+
+            return !isSameDocumentAnchor;
+        } catch (error) {
+            console.warn('Navigation link could not be parsed for fullscreen persistence:', error);
+            return false;
+        }
+    }
+
+    function bindFullscreenPersistence(options) {
+        const { isFullscreenActive } = options;
+        if (typeof isFullscreenActive !== 'function') {
+            return;
+        }
+
+        const rememberIfFullscreen = () => {
+            if (isFullscreenActive()) {
+                rememberFullscreenForNavigation();
+            }
+        };
+
+        document.addEventListener('click', (event) => {
+            const link = event.target.closest('a[href]');
+            if (!isInternalNavigationLink(link)) {
+                return;
+            }
+
+            rememberIfFullscreen();
+        }, true);
+
+        window.addEventListener('beforeunload', rememberIfFullscreen);
+
+        const clearIfFullscreenEnded = () => {
+            if (!isFullscreenActive()) {
+                clearFullscreenNavigationState();
+            }
+        };
+
+        document.addEventListener('fullscreenchange', clearIfFullscreenEnded);
+        document.addEventListener('webkitfullscreenchange', clearIfFullscreenEnded);
+    }
+
+    function restoreFullscreenFromNavigationState(options) {
+        const { isFullscreenActive, requestFullscreen } = options;
+        if (typeof requestFullscreen !== 'function' || !readFullscreenNavigationState()) {
+            return;
+        }
+
+        let isRestoreInProgress = false;
+
+        const attemptRestore = async () => {
+            if (!readFullscreenNavigationState()) {
+                return true;
+            }
+
+            if (typeof isFullscreenActive === 'function' && isFullscreenActive()) {
+                clearFullscreenNavigationState();
+                return true;
+            }
+
+            if (isRestoreInProgress) {
+                return false;
+            }
+
+            isRestoreInProgress = true;
+            try {
+                await requestFullscreen();
+                clearFullscreenNavigationState();
+                return true;
+            } catch (error) {
+                console.warn('Fullscreen restore after navigation was blocked:', error);
+                return false;
+            } finally {
+                isRestoreInProgress = false;
+            }
+        };
+
+        const interactionEvents = ['pointerdown', 'keydown', 'touchstart'];
+        const removeInteractionListeners = () => {
+            interactionEvents.forEach((eventName) => {
+                document.removeEventListener(eventName, handleInteraction, true);
+            });
+        };
+
+        const handleInteraction = async () => {
+            const restored = await attemptRestore();
+            if (restored || !readFullscreenNavigationState()) {
+                removeInteractionListeners();
+            }
+        };
+
+        interactionEvents.forEach((eventName) => {
+            document.addEventListener(eventName, handleInteraction, true);
+        });
+
+        window.addEventListener('pagehide', () => {
+            removeInteractionListeners();
+        }, { once: true });
+
+        window.addEventListener('load', () => {
+            handleInteraction();
+        }, { once: true });
+    }
+
+    window.mdmFullscreenNavigation = {
+        bindFullscreenPersistence,
+        clearFullscreenNavigationState,
+        rememberFullscreenForNavigation,
+        restoreFullscreenFromNavigationState
+    };
+
+    return window.mdmFullscreenNavigation;
+}
+
+ensureFullscreenNavigationHelper();
+
+function isPersistentFullscreenModeEnabled() {
+    try {
+        return sessionStorage.getItem(FULLSCREEN_MODE_STORAGE_KEY) === 'true';
+    } catch (error) {
+        console.warn('Fullscreen mode could not be read:', error);
+        return false;
+    }
+}
+
+function setPersistentFullscreenMode(enabled) {
+    try {
+        if (enabled) {
+            sessionStorage.setItem(FULLSCREEN_MODE_STORAGE_KEY, 'true');
+        } else {
+            sessionStorage.removeItem(FULLSCREEN_MODE_STORAGE_KEY);
+        }
+    } catch (error) {
+        console.warn('Fullscreen mode could not be stored:', error);
+    }
+}
 
 // Sprachumschaltung
 let currentLanguage = 'de';
@@ -861,7 +1073,7 @@ function isSingleswapFullscreenSupported(shell) {
 }
 
 function isSingleswapFullscreenActive(shell) {
-    return document.fullscreenElement === shell || document.webkitFullscreenElement === shell;
+    return Boolean(shell) && isPersistentFullscreenModeEnabled();
 }
 
 function ensureSingleswapFullscreenToolbar() {
@@ -951,21 +1163,20 @@ function toggleSingleswapSettingsMenu() {
 
 async function toggleSingleswapFullscreen() {
     const { shell } = ensureSingleswapFullscreenToolbar();
-    if (!shell || !isSingleswapFullscreenSupported(shell)) {
+    if (!shell) {
         return;
     }
 
     try {
-        if (isSingleswapFullscreenActive(shell)) {
+        const nextState = !isSingleswapFullscreenActive(shell);
+        setPersistentFullscreenMode(nextState);
+
+        if (!nextState) {
             if (typeof document.exitFullscreen === 'function') {
-                await document.exitFullscreen();
+                await document.exitFullscreen().catch(() => undefined);
             } else if (typeof document.webkitExitFullscreen === 'function') {
                 document.webkitExitFullscreen();
             }
-        } else if (typeof shell.requestFullscreen === 'function') {
-            await shell.requestFullscreen();
-        } else if (typeof shell.webkitRequestFullscreen === 'function') {
-            shell.webkitRequestFullscreen();
         }
     } catch (error) {
         console.error('Singleswap fullscreen toggle failed:', error);
@@ -975,7 +1186,7 @@ async function toggleSingleswapFullscreen() {
 }
 
 function initSingleswapFullscreenShell() {
-    const { settingsButton, fullscreenButton } = ensureSingleswapFullscreenToolbar();
+    const { shell, settingsButton, fullscreenButton } = ensureSingleswapFullscreenToolbar();
 
     if (settingsButton && !settingsButton.hasAttribute('data-fullscreen-bound')) {
         settingsButton.setAttribute('data-fullscreen-bound', 'true');

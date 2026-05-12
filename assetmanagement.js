@@ -7,6 +7,7 @@ const DEFAULTS_RECORD_ID = 'globalDefaults';
 const INVENTORY_CLEAR_ONCE_KEY = 'mdmtool_inventory_cleared_2026_04_19';
 const MANAGED_DEVICE_TYPES_KEY = 'mdmtool_managed_device_types_v1';
 const MANAGED_MODELS_KEY = 'mdmtool_managed_models_v1';
+const ASSET_FULLSCREEN_MODE_STORAGE_KEY = 'mdmtool_fullscreen_mode_v1';
 const DEFAULT_DEVICE_TYPES = [];
 const CANONICAL_DEVICE_TYPE_MAP = {};
 
@@ -168,7 +169,7 @@ function isFullscreenSupported() {
 }
 
 function isAssetShellFullscreen() {
-    return document.fullscreenElement === assetNavShell || document.webkitFullscreenElement === assetNavShell;
+    return Boolean(assetNavShell) && sessionStorage.getItem(ASSET_FULLSCREEN_MODE_STORAGE_KEY) === 'true';
 }
 
 function getAssetFullscreenToggleLabel(isFullscreen) {
@@ -237,15 +238,17 @@ async function exitAssetShellFullscreen() {
 }
 
 async function toggleAssetShellFullscreen() {
-    if (!assetNavShell || !isFullscreenSupported()) {
+    if (!assetNavShell) {
         return;
     }
 
     try {
-        if (isAssetShellFullscreen()) {
-            await exitAssetShellFullscreen();
+        const nextState = !isAssetShellFullscreen();
+        if (nextState) {
+            sessionStorage.setItem(ASSET_FULLSCREEN_MODE_STORAGE_KEY, 'true');
         } else {
-            await requestAssetShellFullscreen();
+            sessionStorage.removeItem(ASSET_FULLSCREEN_MODE_STORAGE_KEY);
+            await exitAssetShellFullscreen().catch(() => undefined);
         }
     } catch (error) {
         console.error('Asset fullscreen toggle failed:', error);
@@ -2265,6 +2268,7 @@ async function handleClearInventory() {
 
 function bindEvents() {
     mountAssetOverlayElements();
+    updateAssetFullscreenToggle();
 
     if (assetSettingsShortcut) {
         updateAssetSettingsShortcut();
@@ -2276,14 +2280,10 @@ function bindEvents() {
     }
 
     if (assetFullscreenToggle) {
-        if (!isFullscreenSupported()) {
-            assetFullscreenToggle.classList.add('hidden');
-        } else {
-            updateAssetFullscreenToggle();
-            assetFullscreenToggle.addEventListener('click', () => {
-                toggleAssetShellFullscreen();
-            });
-        }
+        assetFullscreenToggle.classList.remove('hidden');
+        assetFullscreenToggle.addEventListener('click', () => {
+            toggleAssetShellFullscreen();
+        });
     }
 
     if (settingsDefaultsTab) {

@@ -134,6 +134,9 @@ const navTranslations = {
 };
 
     const SURFACE_STYLE_STORAGE_KEY = 'surfaceStyle';
+    const FULLSCREEN_MODE_STORAGE_KEY = 'mdmtool_fullscreen_mode_v1';
+    const FULLSCREEN_NAVIGATION_STORAGE_KEY = 'mdmtool_fullscreen_navigation_v1';
+    const FULLSCREEN_NAVIGATION_MAX_AGE_MS = 15000;
 
 const breadcrumbPageMap = {
     'index.html': 'nav-home',
@@ -338,6 +341,201 @@ function toggleSettingsMenu() {
     updateSharedFullscreenControls();
 }
 
+function isPersistentFullscreenModeEnabled() {
+    try {
+        return sessionStorage.getItem(FULLSCREEN_MODE_STORAGE_KEY) === 'true';
+    } catch (error) {
+        console.warn('Fullscreen mode could not be read:', error);
+        return false;
+    }
+}
+
+function setPersistentFullscreenMode(enabled) {
+    try {
+        if (enabled) {
+            sessionStorage.setItem(FULLSCREEN_MODE_STORAGE_KEY, 'true');
+        } else {
+            sessionStorage.removeItem(FULLSCREEN_MODE_STORAGE_KEY);
+        }
+    } catch (error) {
+        console.warn('Fullscreen mode could not be stored:', error);
+    }
+}
+
+function readFullscreenNavigationState() {
+    try {
+        const rawState = sessionStorage.getItem(FULLSCREEN_NAVIGATION_STORAGE_KEY);
+        if (!rawState) {
+            return null;
+        }
+
+        const parsedState = JSON.parse(rawState);
+        const timestamp = Number(parsedState?.timestamp || 0);
+        if (!parsedState?.pending || !Number.isFinite(timestamp) || (Date.now() - timestamp) > FULLSCREEN_NAVIGATION_MAX_AGE_MS) {
+            sessionStorage.removeItem(FULLSCREEN_NAVIGATION_STORAGE_KEY);
+            return null;
+        }
+
+        return parsedState;
+    } catch (error) {
+        console.warn('Fullscreen navigation state could not be read:', error);
+        sessionStorage.removeItem(FULLSCREEN_NAVIGATION_STORAGE_KEY);
+        return null;
+    }
+}
+
+function rememberFullscreenForNavigation() {
+    try {
+        sessionStorage.setItem(FULLSCREEN_NAVIGATION_STORAGE_KEY, JSON.stringify({
+            pending: true,
+            timestamp: Date.now()
+        }));
+    } catch (error) {
+        console.warn('Fullscreen navigation state could not be stored:', error);
+    }
+}
+
+function clearFullscreenNavigationState() {
+    try {
+        sessionStorage.removeItem(FULLSCREEN_NAVIGATION_STORAGE_KEY);
+    } catch (error) {
+        console.warn('Fullscreen navigation state could not be cleared:', error);
+    }
+}
+
+function isInternalNavigationLink(link) {
+    if (!link || link.hasAttribute('download')) {
+        return false;
+    }
+
+    const rawHref = link.getAttribute('href');
+    if (!rawHref || rawHref.startsWith('#') || rawHref.startsWith('javascript:') || rawHref.startsWith('mailto:') || rawHref.startsWith('tel:')) {
+        return false;
+    }
+
+    if (link.target && link.target !== '_self') {
+        return false;
+    }
+
+    try {
+        const nextUrl = new URL(link.href, window.location.href);
+        if (nextUrl.origin !== window.location.origin) {
+            return false;
+        }
+
+        const isSameDocumentAnchor = nextUrl.pathname === window.location.pathname
+            && nextUrl.search === window.location.search
+            && nextUrl.hash;
+
+        return !isSameDocumentAnchor;
+    } catch (error) {
+        console.warn('Navigation link could not be parsed for fullscreen persistence:', error);
+        return false;
+    }
+}
+
+function bindFullscreenPersistence(options) {
+    const { isFullscreenActive } = options;
+    if (typeof isFullscreenActive !== 'function') {
+        return;
+    }
+
+    const rememberIfFullscreen = () => {
+        if (isFullscreenActive()) {
+            rememberFullscreenForNavigation();
+        }
+    };
+
+    document.addEventListener('click', (event) => {
+        const link = event.target.closest('a[href]');
+        if (!isInternalNavigationLink(link)) {
+            return;
+        }
+
+        rememberIfFullscreen();
+    }, true);
+
+    window.addEventListener('beforeunload', rememberIfFullscreen);
+
+    const clearIfFullscreenEnded = () => {
+        if (!isFullscreenActive()) {
+            clearFullscreenNavigationState();
+        }
+    };
+
+    document.addEventListener('fullscreenchange', clearIfFullscreenEnded);
+    document.addEventListener('webkitfullscreenchange', clearIfFullscreenEnded);
+}
+
+function restoreFullscreenFromNavigationState(options) {
+    const { isFullscreenActive, requestFullscreen } = options;
+    if (typeof requestFullscreen !== 'function' || !readFullscreenNavigationState()) {
+        return;
+    }
+
+    let isRestoreInProgress = false;
+
+    const attemptRestore = async () => {
+        if (!readFullscreenNavigationState()) {
+            return true;
+        }
+
+        if (typeof isFullscreenActive === 'function' && isFullscreenActive()) {
+            clearFullscreenNavigationState();
+            return true;
+        }
+
+        if (isRestoreInProgress) {
+            return false;
+        }
+
+        isRestoreInProgress = true;
+        try {
+            await requestFullscreen();
+            clearFullscreenNavigationState();
+            return true;
+        } catch (error) {
+            console.warn('Fullscreen restore after navigation was blocked:', error);
+            return false;
+        } finally {
+            isRestoreInProgress = false;
+        }
+    };
+
+    const interactionEvents = ['pointerdown', 'keydown', 'touchstart'];
+    const removeInteractionListeners = () => {
+        interactionEvents.forEach((eventName) => {
+            document.removeEventListener(eventName, handleInteraction, true);
+        });
+    };
+
+    const handleInteraction = async () => {
+        const restored = await attemptRestore();
+        if (restored || !readFullscreenNavigationState()) {
+            removeInteractionListeners();
+        }
+    };
+
+    interactionEvents.forEach((eventName) => {
+        document.addEventListener(eventName, handleInteraction, true);
+    });
+
+    window.addEventListener('pagehide', () => {
+        removeInteractionListeners();
+    }, { once: true });
+
+    window.addEventListener('load', () => {
+        handleInteraction();
+    }, { once: true });
+}
+
+window.mdmFullscreenNavigation = {
+    bindFullscreenPersistence,
+    clearFullscreenNavigationState,
+    rememberFullscreenForNavigation,
+    restoreFullscreenFromNavigationState
+};
+
 function getSharedFullscreenShell() {
     return document.querySelector('.nav-shell') || document.querySelector('.subpage-layout');
 }
@@ -369,7 +567,7 @@ function isSharedFullscreenSupported(shell) {
 }
 
 function isSharedFullscreenActive(shell = getSharedFullscreenShell()) {
-    return document.fullscreenElement === shell || document.webkitFullscreenElement === shell;
+    return Boolean(shell) && isPersistentFullscreenModeEnabled();
 }
 
 function mountSharedFullscreenOverlays(shell) {
@@ -485,21 +683,20 @@ function toggleSharedSettingsMenu() {
 
 async function toggleSharedFullscreen() {
     const shell = getSharedFullscreenShell();
-    if (!shell || !isSharedFullscreenSupported(shell)) {
+    if (!shell) {
         return;
     }
 
     try {
-        if (isSharedFullscreenActive(shell)) {
+        const nextState = !isSharedFullscreenActive(shell);
+        setPersistentFullscreenMode(nextState);
+
+        if (!nextState) {
             if (typeof document.exitFullscreen === 'function') {
-                await document.exitFullscreen();
+                await document.exitFullscreen().catch(() => undefined);
             } else if (typeof document.webkitExitFullscreen === 'function') {
                 document.webkitExitFullscreen();
             }
-        } else if (typeof shell.requestFullscreen === 'function') {
-            await shell.requestFullscreen();
-        } else if (typeof shell.webkitRequestFullscreen === 'function') {
-            shell.webkitRequestFullscreen();
         }
     } catch (error) {
         console.error('Fullscreen toggle failed:', error);

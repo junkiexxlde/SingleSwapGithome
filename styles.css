@@ -824,8 +824,13 @@ h2 {
 
 .app-fullscreen-shell:fullscreen,
 .app-fullscreen-shell:-webkit-full-screen,
+.app-fullscreen-shell.is-fullscreen,
 .nav-shell:fullscreen,
-.nav-shell:-webkit-full-screen {
+.nav-shell:-webkit-full-screen,
+.nav-shell.is-fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 2200;
     width: 100vw;
     max-width: none;
     height: 100vh;
@@ -840,8 +845,10 @@ h2 {
 
 .app-fullscreen-shell:fullscreen .app-fullscreen-shell-toolbar,
 .app-fullscreen-shell:-webkit-full-screen .app-fullscreen-shell-toolbar,
+.app-fullscreen-shell.is-fullscreen .app-fullscreen-shell-toolbar,
 .nav-shell:fullscreen .nav-shell-toolbar,
-.nav-shell:-webkit-full-screen .nav-shell-toolbar {
+.nav-shell:-webkit-full-screen .nav-shell-toolbar,
+.nav-shell.is-fullscreen .nav-shell-toolbar {
     position: sticky;
     top: 0;
     z-index: 5;
@@ -989,6 +996,17 @@ body.page-fullscreen-active .modal-content {
     flex-wrap: wrap;
     gap: 0.8rem;
     margin-top: 1.2rem;
+}
+
+.subpage-nav-row {
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 0.25rem;
+}
+
+.subpage-nav-row .back-link {
+    min-width: 220px;
+    text-align: center;
 }
 
 .back-link {
@@ -1649,11 +1667,11 @@ body.page-fullscreen-active .modal-content {
     }
 
     .singleswap-page .singleswap-overview-link {
-        width: 100%;
+        width: auto;
     }
 
     .singleswap-page .singleswap-link-actions {
-        grid-template-columns: minmax(0, 1fr);
+        width: 100%;
     }
 }
 
@@ -2086,16 +2104,10 @@ textarea {
 }
 
 .singleswap-page .singleswap-link-actions {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
-    width: 100%;
     margin: 0 0 12px;
 }
 
 .singleswap-page .singleswap-overview-link {
-    width: 100%;
-    min-width: 0;
     border-radius: 12px;
     text-decoration: none;
     display: flex;
@@ -3952,6 +3964,19 @@ textarea {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+}
+
+.nav-shell.is-fullscreen .subpage-nav-row {
+    position: sticky;
+    bottom: 0;
+    z-index: 6;
+    margin-top: auto;
+    padding: 0.9rem 0 0;
+    background: linear-gradient(to top, var(--card-bg) 68%, rgba(255, 255, 255, 0));
+}
+
+[data-theme="dark"] .nav-shell.is-fullscreen .subpage-nav-row {
+    background: linear-gradient(to top, var(--card-bg) 68%, rgba(15, 15, 15, 0));
 }
 
 .overview-search-section {
