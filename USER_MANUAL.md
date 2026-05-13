@@ -23,10 +23,13 @@ Die Anwendung funktioniert vollständig offline, sobald sie einmal im Browser ge
 
 - **Sprache:** Oben rechts auf `DE` oder `EN` klicken, um zwischen Deutsch und Englisch zu wechseln
 - **Dark Mode:** Klick auf 🌙 / ☀️ (oben rechts neben den Sprachbuttons) schaltet zwischen hellem und dunklem Design um
+- **Vollbild:** Der Vollbildmodus arbeitet hybrid. Das Layout bleibt seitenübergreifend im Vollbildmodus, und der Browser wird zusätzlich in den nativen Vollbildmodus versetzt, wenn der Browser das zulässt.
 
 Diese beiden Toggles sind auf allen drei Navigationsseiten verfügbar (`index.html`, `overview.html`, `assetmanagement.html`) sowie im Erfassungsformular (`singleswap.html`).
 
 Beide Einstellungen werden automatisch gespeichert und beim nächsten Öffnen wiederhergestellt.
+
+Hinweis: Manche Browser beenden den nativen Vollbildmodus beim Wechsel auf eine andere Seite. In diesem Fall bleibt die Anwendung optisch im Vollbildmodus; für den nativen Browser-Vollbildmodus kann nach der Navigation ein zusätzlicher Klick auf den Vollbild-Button nötig sein. Wenn der Vollbildmodus bewusst verlassen wird, wird er auch für die Anwendung beendet.
 
 ### 2.1 Startseite (Navigation)
 

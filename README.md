@@ -113,6 +113,12 @@ Then open the shown local URL in your browser.
 - `service-worker.js` caches core assets for offline usage
 - After first successful load, the app can run offline in the same browser profile
 
+## Fullscreen Behavior
+
+- Fullscreen uses a hybrid model: the app keeps its fullscreen layout across subpages and also requests native browser fullscreen when the browser allows it.
+- Some browsers end native fullscreen when navigating to another page. In that case, the app stays in fullscreen layout and native fullscreen may require one extra click on the fullscreen button after navigation.
+- If the user exits fullscreen explicitly, fullscreen mode is turned off for the app as well.
+
 ## Documentation
 
 - User guide: `USER_MANUAL.md`

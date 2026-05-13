@@ -9,3 +9,10 @@ on pressing the delete Button a popup with a coherant short messeage and a messa
 When editing data like Device Type, Model, Asset ID, Serial, Number make sure the changes are made where ever these values are used or displayed. [erledigt]
 
 neuer Bug in single swap, irgendwo werden die Felde von Old und new gegenseitig beeinflusst, derzeit muss man erst alle felder in new auswählen ansonsten rsetten sich die groben werte in old
+
+
+Fullscreen not working on Firefox
+Make fullscreen hybrid: use real requestFullscreen() when the browser allows it, and fall back to the current app-mode overlay only when native fullscreen is unavailable or would break cross-page persistence.
+Remove the Fullscreen API gating entirely for shared pages so the fullscreen button is shown consistently everywhere the CSS-based mode can work.
+Build a small browser-compat test matrix into the app notes or README so you have an explicit support target for Firefox, Chromium, Safari, and iOS.
+1.

@@ -447,6 +447,7 @@ function ensureFullscreenNavigationHelper() {
     window.mdmFullscreenNavigation = {
         bindFullscreenPersistence,
         clearFullscreenNavigationState,
+        hasPendingFullscreenNavigation: () => Boolean(readFullscreenNavigationState()),
         rememberFullscreenForNavigation,
         restoreFullscreenFromNavigationState
     };
@@ -1076,6 +1077,25 @@ function isSingleswapFullscreenActive(shell) {
     return Boolean(shell) && isPersistentFullscreenModeEnabled();
 }
 
+function isSingleswapNativeFullscreenActive(shell) {
+    return document.fullscreenElement === shell || document.webkitFullscreenElement === shell;
+}
+
+async function requestSingleswapFullscreen(shell) {
+    if (!shell || !isSingleswapFullscreenSupported(shell)) {
+        return;
+    }
+
+    if (typeof shell.requestFullscreen === 'function') {
+        await shell.requestFullscreen();
+        return;
+    }
+
+    if (typeof shell.webkitRequestFullscreen === 'function') {
+        shell.webkitRequestFullscreen();
+    }
+}
+
 function ensureSingleswapFullscreenToolbar() {
     const shell = document.querySelector('.singleswap-shell');
     if (!shell) {
@@ -1146,7 +1166,6 @@ function updateSingleswapFullscreenControls() {
         fullscreenButton.setAttribute('aria-label', fullscreenLabel);
         fullscreenButton.setAttribute('title', fullscreenLabel);
         fullscreenButton.setAttribute('aria-pressed', isFullscreen ? 'true' : 'false');
-        fullscreenButton.classList.toggle('hidden', !isSingleswapFullscreenSupported(shell));
     }
 }
 
@@ -1171,7 +1190,9 @@ async function toggleSingleswapFullscreen() {
         const nextState = !isSingleswapFullscreenActive(shell);
         setPersistentFullscreenMode(nextState);
 
-        if (!nextState) {
+        if (nextState) {
+            await requestSingleswapFullscreen(shell);
+        } else {
             if (typeof document.exitFullscreen === 'function') {
                 await document.exitFullscreen().catch(() => undefined);
             } else if (typeof document.webkitExitFullscreen === 'function') {
@@ -1206,8 +1227,30 @@ function initSingleswapFullscreenShell() {
         });
     }
 
-    document.addEventListener('fullscreenchange', updateSingleswapFullscreenControls);
-    document.addEventListener('webkitfullscreenchange', updateSingleswapFullscreenControls);
+    const syncSingleswapNativeFullscreenState = () => {
+        if (
+            isPersistentFullscreenModeEnabled()
+            && isSingleswapFullscreenSupported(shell)
+            && !isSingleswapNativeFullscreenActive(shell)
+            && !window.mdmFullscreenNavigation?.hasPendingFullscreenNavigation()
+        ) {
+            setPersistentFullscreenMode(false);
+        }
+
+        updateSingleswapFullscreenControls();
+    };
+
+    document.addEventListener('fullscreenchange', syncSingleswapNativeFullscreenState);
+    document.addEventListener('webkitfullscreenchange', syncSingleswapNativeFullscreenState);
+
+    window.mdmFullscreenNavigation.bindFullscreenPersistence({
+        isFullscreenActive: () => isSingleswapFullscreenActive(shell)
+    });
+    window.mdmFullscreenNavigation.restoreFullscreenFromNavigationState({
+        isFullscreenActive: () => isSingleswapNativeFullscreenActive(shell),
+        requestFullscreen: () => requestSingleswapFullscreen(shell)
+    });
+
     updateSingleswapFullscreenControls();
 }
 

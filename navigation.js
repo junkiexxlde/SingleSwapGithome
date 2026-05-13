@@ -532,6 +532,7 @@ function restoreFullscreenFromNavigationState(options) {
 window.mdmFullscreenNavigation = {
     bindFullscreenPersistence,
     clearFullscreenNavigationState,
+    hasPendingFullscreenNavigation: () => Boolean(readFullscreenNavigationState()),
     rememberFullscreenForNavigation,
     restoreFullscreenFromNavigationState
 };
@@ -568,6 +569,25 @@ function isSharedFullscreenSupported(shell) {
 
 function isSharedFullscreenActive(shell = getSharedFullscreenShell()) {
     return Boolean(shell) && isPersistentFullscreenModeEnabled();
+}
+
+function isSharedNativeFullscreenActive(shell = getSharedFullscreenShell()) {
+    return document.fullscreenElement === shell || document.webkitFullscreenElement === shell;
+}
+
+async function requestSharedFullscreen(shell = getSharedFullscreenShell()) {
+    if (!shell || !isSharedFullscreenSupported(shell)) {
+        return;
+    }
+
+    if (typeof shell.requestFullscreen === 'function') {
+        await shell.requestFullscreen();
+        return;
+    }
+
+    if (typeof shell.webkitRequestFullscreen === 'function') {
+        shell.webkitRequestFullscreen();
+    }
 }
 
 function mountSharedFullscreenOverlays(shell) {
@@ -666,7 +686,6 @@ function updateSharedFullscreenControls() {
         fullscreenButton.setAttribute('aria-label', fullscreenLabel);
         fullscreenButton.setAttribute('title', fullscreenLabel);
         fullscreenButton.setAttribute('aria-pressed', isFullscreen ? 'true' : 'false');
-        fullscreenButton.classList.toggle('hidden', !isSharedFullscreenSupported(shell));
     }
 }
 
@@ -691,7 +710,9 @@ async function toggleSharedFullscreen() {
         const nextState = !isSharedFullscreenActive(shell);
         setPersistentFullscreenMode(nextState);
 
-        if (!nextState) {
+        if (nextState) {
+            await requestSharedFullscreen(shell);
+        } else {
             if (typeof document.exitFullscreen === 'function') {
                 await document.exitFullscreen().catch(() => undefined);
             } else if (typeof document.webkitExitFullscreen === 'function') {
@@ -738,9 +759,30 @@ function initSharedFullscreenShell() {
         });
     }
 
-    document.addEventListener('fullscreenchange', updateSharedFullscreenControls);
-    document.addEventListener('webkitfullscreenchange', updateSharedFullscreenControls);
+    const syncSharedNativeFullscreenState = () => {
+        if (
+            isPersistentFullscreenModeEnabled()
+            && isSharedFullscreenSupported(shell)
+            && !isSharedNativeFullscreenActive(shell)
+            && !window.mdmFullscreenNavigation?.hasPendingFullscreenNavigation()
+        ) {
+            setPersistentFullscreenMode(false);
+        }
+
+        updateSharedFullscreenControls();
+    };
+
+    document.addEventListener('fullscreenchange', syncSharedNativeFullscreenState);
+    document.addEventListener('webkitfullscreenchange', syncSharedNativeFullscreenState);
     document.addEventListener('mdm-language-changed', updateSharedFullscreenControls);
+
+    window.mdmFullscreenNavigation.bindFullscreenPersistence({
+        isFullscreenActive: () => isSharedFullscreenActive(shell)
+    });
+    window.mdmFullscreenNavigation.restoreFullscreenFromNavigationState({
+        isFullscreenActive: () => isSharedNativeFullscreenActive(shell),
+        requestFullscreen: () => requestSharedFullscreen(shell)
+    });
 
     updateSharedFullscreenControls();
 }

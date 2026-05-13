@@ -172,6 +172,10 @@ function isAssetShellFullscreen() {
     return Boolean(assetNavShell) && sessionStorage.getItem(ASSET_FULLSCREEN_MODE_STORAGE_KEY) === 'true';
 }
 
+function isAssetNativeFullscreenActive() {
+    return document.fullscreenElement === assetNavShell || document.webkitFullscreenElement === assetNavShell;
+}
+
 function getAssetFullscreenToggleLabel(isFullscreen) {
     return isFullscreen
         ? t('Vollbildmodus verlassen', 'Exit fullscreen mode')
@@ -246,6 +250,7 @@ async function toggleAssetShellFullscreen() {
         const nextState = !isAssetShellFullscreen();
         if (nextState) {
             sessionStorage.setItem(ASSET_FULLSCREEN_MODE_STORAGE_KEY, 'true');
+            await requestAssetShellFullscreen();
         } else {
             sessionStorage.removeItem(ASSET_FULLSCREEN_MODE_STORAGE_KEY);
             await exitAssetShellFullscreen().catch(() => undefined);
@@ -2270,6 +2275,16 @@ function bindEvents() {
     mountAssetOverlayElements();
     updateAssetFullscreenToggle();
 
+    if (window.mdmFullscreenNavigation) {
+        window.mdmFullscreenNavigation.bindFullscreenPersistence({
+            isFullscreenActive: isAssetShellFullscreen
+        });
+        window.mdmFullscreenNavigation.restoreFullscreenFromNavigationState({
+            isFullscreenActive: isAssetNativeFullscreenActive,
+            requestFullscreen: requestAssetShellFullscreen
+        });
+    }
+
     if (assetSettingsShortcut) {
         updateAssetSettingsShortcut();
         assetSettingsShortcut.addEventListener('click', (event) => {
@@ -2580,10 +2595,28 @@ function bindEvents() {
     });
 
     document.addEventListener('fullscreenchange', () => {
+        if (
+            isAssetShellFullscreen()
+            && isFullscreenSupported()
+            && !isAssetNativeFullscreenActive()
+            && !window.mdmFullscreenNavigation?.hasPendingFullscreenNavigation()
+        ) {
+            sessionStorage.removeItem(ASSET_FULLSCREEN_MODE_STORAGE_KEY);
+        }
+
         updateAssetFullscreenToggle();
     });
 
     document.addEventListener('webkitfullscreenchange', () => {
+        if (
+            isAssetShellFullscreen()
+            && isFullscreenSupported()
+            && !isAssetNativeFullscreenActive()
+            && !window.mdmFullscreenNavigation?.hasPendingFullscreenNavigation()
+        ) {
+            sessionStorage.removeItem(ASSET_FULLSCREEN_MODE_STORAGE_KEY);
+        }
+
         updateAssetFullscreenToggle();
     });
 
